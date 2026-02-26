@@ -9,7 +9,7 @@ import {
   faMusic,
   faClipboard,
   faBook,
-  faComments,
+  // faComments, // eliminado
   faUserCog,
   faAngleLeft,
   faAngleRight,
@@ -19,20 +19,18 @@ import Navbar from '../components/Navbar';
 import LessonsSection from './LessonsSection';
 import GradesSection from './GradesSection';
 import CoursesSection from './CoursesSection';
-import FeedbackSection from './FeedbackSection';
+// import FeedbackSection from './FeedbackSection'; // eliminado
 import ProfileSection from './ProfileSection';
 import HomeStudent from './HomeStudent';
 
 export default function DashboardStudent() {
   const [selectedSection, setSelectedSection] = useState('lessons');
   const [userData, setUserData] = useState(null);
-  const [feedbackLessonId, setFeedbackLessonId] = useState(null);
 
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // móvil
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // escritorio
 
   useEffect(() => {
-    // Activar la clase body-dashboard al entrar al dashboard
     document.body.classList.add('body-dashboard');
 
     const auth = getAuth();
@@ -52,28 +50,30 @@ export default function DashboardStudent() {
     });
 
     return () => {
-      // Limpiar la suscripción y remover clase al desmontar el componente
       unsubscribe();
       document.body.classList.remove('body-dashboard');
     };
   }, []);
 
-
   const renderContent = () => {
     switch (selectedSection) {
       case 'home':
-        return <HomeStudent user={{ firstName: userData?.firstName || 'Estudiante', lastName: userData?.lastName || '' }} />;
+        return (
+          <HomeStudent
+            user={{
+              firstName: userData?.firstName || 'Estudiante',
+              lastName: userData?.lastName || '',
+            }}
+          />
+        );
       case 'lessons':
-        return <LessonsSection onNavigateToFeedback={(lessonId) => {
-          setFeedbackLessonId(lessonId);
-          setSelectedSection('feedback');
-        }} />;
+        return <LessonsSection />;
       case 'grades':
         return <GradesSection />;
       case 'courses':
         return <CoursesSection />;
-      case 'feedback':
-        return <FeedbackSection lessonId={feedbackLessonId} />;
+      // case 'feedback':
+      //   return <FeedbackSection lessonId={feedbackLessonId} />; // eliminado
       case 'profile':
         return <ProfileSection />;
       default:
@@ -83,7 +83,7 @@ export default function DashboardStudent() {
 
   const handleNavClick = (section) => {
     setSelectedSection(section);
-    setIsSidebarOpen(false); // solo en móvil, cerrar al hacer clic
+    setIsSidebarOpen(false); // cerrar menú en móvil
   };
 
   return (
@@ -91,8 +91,12 @@ export default function DashboardStudent() {
       <Navbar onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)} />
 
       <div className="dashboard">
-        <aside className={`menu-dashboard ${isSidebarOpen ? 'active' : ''} ${isSidebarCollapsed ? 'collapsed' : ''}`}>
-          <h2 className="logo">Clariplay</h2>
+        <aside
+          className={`menu-dashboard ${
+            isSidebarOpen ? 'active' : ''
+          } ${isSidebarCollapsed ? 'collapsed' : ''}`}
+        >
+          <h2 className="logo-dash">Clariplay</h2>
           <nav className="nav">
             <button onClick={() => handleNavClick('home')}>
               <FontAwesomeIcon icon={faHome} /> <span>Inicio</span>
@@ -106,14 +110,12 @@ export default function DashboardStudent() {
             <button onClick={() => handleNavClick('courses')}>
               <FontAwesomeIcon icon={faBook} /> <span>Cursos</span>
             </button>
-            <button onClick={() => handleNavClick('feedback')}>
-              <FontAwesomeIcon icon={faComments} /> <span>Retroalimentación</span>
-            </button>
+            {/* Botón feedback eliminado */}
+
             <button onClick={() => handleNavClick('profile')}>
               <FontAwesomeIcon icon={faUserCog} /> <span>Perfil</span>
             </button>
 
-            {/* Botón solo visible en escritorio */}
             <div className="collapse-toggle desktop-only">
               <button onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}>
                 <FontAwesomeIcon icon={isSidebarCollapsed ? faAngleRight : faAngleLeft} />
@@ -128,7 +130,6 @@ export default function DashboardStudent() {
               lessons: 'Mis lecciones',
               grades: 'Calificaciones',
               courses: 'Cursos',
-              feedback: 'Retroalimentación',
               profile: 'Perfil',
               home: 'Inicio',
             }[selectedSection]}

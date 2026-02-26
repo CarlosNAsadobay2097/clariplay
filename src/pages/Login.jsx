@@ -17,16 +17,18 @@ export default function Login() {
     setLoading(true);
 
     try {
+      // 1. Autenticar usuario
       const cred = await signInWithEmailAndPassword(auth, email, password);
       const user = cred.user;
 
-      // Obtener el rol del usuario desde Firestore
+      // 2. Obtener rol del usuario desde Firestore
       const userDocRef = doc(db, 'users', user.uid);
       const userDocSnap = await getDoc(userDocRef);
 
       if (userDocSnap.exists()) {
         const role = userDocSnap.data().role;
 
+        // 3. Navegar según rol
         if (role === 'student') {
           navigate('/dashboard-student');
         } else if (role === 'teacher') {
@@ -37,7 +39,6 @@ export default function Login() {
       } else {
         setError('No se encontró la información del usuario.');
       }
-
     } catch (err) {
       setError('Error al iniciar sesión: ' + err.message);
     } finally {
@@ -55,6 +56,7 @@ export default function Login() {
           value={email}
           onChange={(e) => setEmail(e.target.value)}
           required
+          autoComplete="username"
         />
         <input
           type="password"
@@ -62,6 +64,7 @@ export default function Login() {
           value={password}
           onChange={(e) => setPassword(e.target.value)}
           required
+          autoComplete="current-password"
         />
         {error && <p className="error">{error}</p>}
         <button type="submit" disabled={loading}>

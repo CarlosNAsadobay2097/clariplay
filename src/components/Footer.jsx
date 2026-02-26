@@ -4,7 +4,7 @@ function Footer() {
   return (
     <footer className="footer">
       <p>
-        Design by <a href="https://ngindustry.example.com" target="_blank" rel="noopener noreferrer">NGIndustry</a>, 
+        Designed and developed by <a href="https://ngindustry.example.com" target="_blank" rel="noopener noreferrer">NGIndustry</a>, 
         Created by <a href="https://linkedin.com/in/andreavelastegui" target="_blank" rel="noopener noreferrer">Andrea Velastegui</a>
       </p>
       <div className="social-icons">

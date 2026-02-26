@@ -243,8 +243,8 @@ input {
 
 /* Botón */
 button, .cta-button {
-  width: 50%;
-  padding: 12px;
+  /* width: 30%;  ❌ Eliminar o comentar esta línea */
+  padding: 12px 20px; /* padding horizontal suficiente para el texto */
   background-color: #1d1d1b;
   border: none;
   border-radius: 6px;
@@ -256,6 +256,7 @@ button, .cta-button {
   text-align: center;
   display: inline-block;
   text-decoration: none;
+  white-space: nowrap; /* opcional: evita que el texto se corte en varias líneas */
 }
 
 button:hover, .cta-button:hover {
@@ -522,7 +523,7 @@ VIDEO CONTAINER
   .navbar {
     flex-direction: column;
     align-items: flex-start;
-    padding: 15px 20px;
+    padding: 10px 15px;
   }
 
   .navbar-content {
@@ -613,6 +614,7 @@ VIDEO CONTAINER
 
   .footer {
     font-size: 14px;
+    padding-bottom: 8em;
   }
 
   .social-icons a {
@@ -660,7 +662,7 @@ VIDEO CONTAINER
   }
 
   .menu-center {
-    padding: 10px;
+    padding: 5px;
     transform: translateY(-10%);
     box-shadow: 0 0 10px rgba(229, 27, 35, 0.5);
   }
@@ -858,7 +860,8 @@ ESTILOS DASHBOARD-STUDENT
 .logo {
   font-size: 1.6rem;
   font-weight: bold;
-  margin-bottom: 2rem;
+  margin-top: 0.5rem;
+  margin-bottom: 0.75rem;
 }
 
 .logo-dash {
@@ -989,40 +992,197 @@ ESTILOS PARA LA SECCION DE INICIO
   display: flex;
   justify-content: center;
   align-items: center;
-  height: 100%;
+  padding: 1rem;
   background-color: white;
   border-radius: 0.75rem;
   box-shadow: 0 0 6px rgba(0, 0, 0, 0.07);
+  margin-bottom: 2rem;
 }
 
 .home-welcome h2 {
-  font-size: 2.2rem;
+  font-size: 2rem;
   font-weight: 600;
   color: #1D1D1B;
   text-align: center;
 }
 
+/* Bloque reutilizable */
+.section-block > button {
+  display: block;
+  margin: 1rem auto 2rem auto;
+  padding: 10px 20px;
+  background-color: #c00;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
 
-.section-block {
-  background-color: white;
-  padding: 2rem;
-  border-radius: 0.75rem;
-  box-shadow: 0 0 6px rgba(0, 0, 0, 0.07);
-  color: #1D1D1B;
-  max-width: 800px;
-  margin: 0 auto;
+.section-block > button:hover {
+  background-color: #900;
 }
 
 .section-block h2 {
   font-size: 1.8rem;
   color: #E51B23;
+  margin-bottom: 1.5rem;
+}
+
+/* Formulario */
+.add-course-form {
+  max-width: 400px;
+  margin: 0 auto 2rem auto;
+  padding: 1rem 1.5rem;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  background-color: #fafafa;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+/* Labels y inputs */
+.add-course-form div {
   margin-bottom: 1rem;
 }
 
-.section-block p {
-  font-size: 1rem;
-  line-height: 1.6;
+.add-course-form label {
+  display: block;
+  font-weight: 600;
+  margin-bottom: 6px;
+  color: #333;
 }
+
+.add-course-form input[type="text"],
+.add-course-form select {
+  width: 100%;
+  padding: 8px 1px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 14px;
+  transition: border-color 0.3s ease;
+}
+
+.add-course-form input[type="text"]:focus,
+.add-course-form select:focus {
+  outline: none;
+  border-color: #c00;
+}
+
+/* Botón de agregar dentro del formulario */
+.add-course-form button[type="submit"] {
+  display: block;
+  margin: 1rem auto 0 auto;
+  padding: 10px 24px;
+  background-color: #c00;
+  color: white;
+  font-weight: 700;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.add-course-form button[type="submit"]:hover {
+  background-color: #900;
+}
+
+/* Lista de notificaciones */
+.notificaciones-filtro {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.filtro-select {
+  padding: 0.5rem;
+  font-size: 1rem;
+  max-width: 250px;
+  border-radius: 8px; /* Agrega esta línea */
+  border: 1px solid #ccc; /* Opcional para un borde más definido */
+}
+
+
+.notificaciones-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notificacion-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  border-bottom: 1px solid #ddd;
+  border-radius: 5px;
+  background-color: #fff;
+  margin-bottom: 0.5rem;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.notificacion-item.no-leida {
+  background-color: #fff9e6;
+}
+
+.notificacion-item.leida {
+  opacity: 0.7;
+}
+
+.notificacion-texto {
+  flex-grow: 1;
+  min-width: 200px;
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: #777;
+  display: block;
+  margin-top: 0.25rem;
+}
+
+.btn-mark-read {
+  background-color: #1d1d1b;
+  color: #fff1e6;
+  border: none;
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.notificacion-vacia {
+  text-align: center;
+  color: #888;
+  padding: 1rem;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .notificacion-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-mark-read {
+    margin-top: 0.5rem;
+  }
+}
+
+/*-----------------------------------
+ESTILOS PARA CURSOS DE LOS PROFESORES
+-----------------------------------*/
+
+.courses-list {
+  padding-left: 1rem; /* 🔽 antes seguro era mayor, como 2rem o más */
+  padding-right: 1rem; /* para balancear horizontalmente */
+  margin: 0 auto;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
 /*-----------------------------
 ESTILOS PARA LA SECCION LECCIONES
 -----------------------------*/
@@ -1121,31 +1281,223 @@ textarea {
   background: #B3171A;
 }
 
+.toast-edit-message {
+  position: fixed;
+  top: 80px;
+  right: 20px;
+  background-color: #fff1e6;
+  color: #1d1d1b;
+  border-left: 6px solid #e51b23;
+  padding: 12px 16px;
+  border-radius: 8px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 320px;
+  animation: fadeSlideIn 0.3s ease;
+  font-size: 14px;
+}
+
+.toast-close-button {
+  max-width: 10%;
+  background: none;
+  border: none;
+  font-size: 16px;
+  color: #e51b23;
+  font-weight: bold;
+  cursor: pointer;
+  padding: 0;
+  margin: 0;
+}
+
+.theory-card {
+  border: 1px solid #ddd;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  background-color: #fff;
+  border-radius: 8px;
+}
+
+.image-container {
+  margin-top: 0.5rem;
+}
+
+.toggle-image-button {
+  background-color: #E51B23;
+  color: #fff;
+  border: none;
+  padding: 6px 12px;
+  margin-bottom: 0.5rem;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9rem;
+}
+
+.theory-image {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+}
+
+
+.toast-close-button:hover {
+  color: #b81a1f;
+}
+
+@keyframes fadeSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+
+
 /*------------------------------------
 ESTILOS PARA LA SECCION CALIFICACIONES
 ------------------------------------*/
-.lessons-table {
+.lessons-section-wrapper {
+  padding: 2rem 1rem;
+  background-color: #fff;
+  max-width: 900px;
+  margin: 0 auto;
+}
+
+.lessons-section-title {
+  font-size: 1.8rem;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+.lessons-section-loading,
+.lessons-section-empty {
+  font-style: italic;
+  color: #999;
+  text-align: center;
+}
+
+.lessons-section-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.lessons-card {
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  padding: 1.2rem;
+  background: #fffbe6;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
   width: 100%;
-  border-collapse: collapse;
-  margin-bottom: 2rem;
+  box-sizing: border-box;
 }
 
-.lessons-table th,
-.lessons-table td {
-  border: 1px solid #ccc;
-  padding: 0.75rem;
-  text-align: left;
-}
-
-.lessons-table th {
-  background-color: #E51B23;
-  color: white;
+.lessons-card-title {
+  margin-bottom: 0.5rem;
+  font-size: 1.3rem;
   font-weight: 600;
 }
 
-.lessons-table tr:nth-child(even) {
-  background-color: #FFF1E6;
+.lessons-card-type {
+  margin: 0.3rem 0;
+  font-size: 0.95rem;
+  color: #444;
 }
+
+.lessons-card-description {
+  font-style: italic;
+  color: #333;
+  margin-bottom: 0.5rem;
+}
+
+.lessons-card-button {
+  /* width: 100%; ❌ Elimina o comenta esta línea */
+  margin-top: 0.75rem;
+  padding: 0.6rem 1.2rem;
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s ease;
+  display: inline-block; /* importante para que respete el ancho del texto */
+  white-space: nowrap; /* opcional para evitar saltos de línea */
+}
+
+.lessons-card-button:hover {
+  background-color: #c2151b;
+}
+
+.lessons-card-score {
+  margin-top: 1rem;
+}
+
+.lessons-card-image-wrapper {
+  margin-top: 1rem;
+}
+
+.lessons-card-image {
+  max-width: 100%;
+  border-radius: 6px;
+  display: block;
+}
+
+.lessons-card-content {
+  margin-top: 1rem;
+  padding: 1rem;
+  background: #fff9f5;
+  border: 1px solid #e0d7cf;
+  border-radius: 6px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+  color: #1D1D1B;
+
+  /* 🔧 Nuevas propiedades para que no se rompa en móvil */
+  word-break: break-word;
+  overflow-wrap: anywhere;
+}
+
+
+.lessons-card-content h1,
+.lessons-card-content h2,
+.lessons-card-content h3 {
+  margin-top: 1rem;
+}
+
+.lessons-card-content ul,
+.lessons-card-content ol {
+  margin-left: 1.5rem;
+}
+
+@media (max-width: 480px) {
+  .lessons-section-wrapper {
+    padding: 1rem 0.5rem;
+  }
+
+  .lessons-card {
+    padding: 1rem;
+  }
+
+  .lessons-card-button {
+    font-size: 0.95rem;
+    padding: 0.5rem 0.8rem;
+  }
+
+  .lessons-card-title {
+    font-size: 1.1rem;
+  }
+}
+
 
 .feedback-link {
   background: none;
@@ -1164,68 +1516,879 @@ ESTILOS PARA LA SECCION CALIFICACIONES
 /*---------------------------------------
 ESTILOS PARA LA SECCION RETROALIMENTACION
 ---------------------------------------*/
-.feedback-card {
-  background-color: #FFF1E6;
-  border: 1px solid #E51B23;
-  padding: 1rem;
-  border-radius: 8px;
-  margin-bottom: 1.2rem;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
+.lessons-section {
+  background-color: #fff;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
-.feedback-card h3 {
-  color: #E51B23;
-  margin-bottom: 0.5rem;
-}
-
-.feedback-card p {
-  margin: 0.3rem 0;
+.lessons-section h2 {
+  font-size: 1.75rem;
+  font-weight: 600;
+  margin-bottom: 1rem;
   color: #1D1D1B;
 }
-/*----------------------------
-ESTILOS PARA LA SECCION CURSOS
-----------------------------*/
-.course-list {
+
+/* Contenedor para scroll horizontal */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: 0.5rem;
+  box-shadow: inset 0 0 5px rgba(0,0,0,0.1);
+}
+
+/* Tabla de calificaciones */
+.school-grades {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+  border: 1px solid #ddd;
+  border-radius: 0.5rem;
+  overflow: visible;
+}
+
+.school-grades thead {
+  background-color: #FFE5E5;
+  color: #E51B23;
+  text-align: left;
+}
+
+.school-grades th,
+.school-grades td {
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid #eee;
+  text-align: left;
+}
+
+.school-grades tr:hover {
+  background-color: #FFF6F6;
+  transition: background-color 0.2s ease-in-out;
+}
+
+/* Opcional: mejora la visibilidad en móviles */
+@media (max-width: 768px) {
+  .school-grades th,
+  .school-grades td {
+    white-space: nowrap; /* evita que el texto se quiebre y permita scroll */
+  }
+}
+
+
+/*------------------------------------------
+ESTILOS PARA LA VENTANA FEEDBACK ESTUDIANTES
+------------------------------------------*/
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0,0,0,0.4);
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.modal-content {
+  background: white;
+  padding: 1.5rem 2rem;
+  border-radius: 1rem;
+  max-width: 400px;
+  width: 90%;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+  text-align: center;
+}
+
+.btn-ok {
+  margin-top: 1rem;
+  padding: 0.5rem 1.5rem;
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  border-radius: 0.5rem;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.btn-ok:hover {
+  background-color: #B4171B;
+}
+
+
+
+/*---------------------------------------
+ESTILOS PARA LA SECCION LECCIONES TEACHER
+---------------------------------------*/
+
+.create-lesson {
+  background-color: #FFF1E6;
+  padding: 2rem;
+  border-radius: 12px;
+  color: #E51B23;
+  max-width: 800px;
+  margin: 0 auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.create-lesson h2 h3 {
+  font-weight: 600; /* semibold */
+  font-size: 1.6rem;
+  margin-bottom: 1rem;
+  color: #E51B23;
+}
+
+.lesson-form {
+  display: flex;
+  flex-direction: column;
   gap: 1.5rem;
   margin-top: 1rem;
 }
 
-.course-card {
-  width: 280px;
-  background-color: #FFF1E6;
-  border: 1px solid #E51B23;
-  border-radius: 8px;
-  padding: 1rem;
+.lesson-form label {
+  display: flex;
+  flex-direction: column;
+  font-weight: bold;
+  font-size: 0.95rem;
   color: #1D1D1B;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.lesson-form input,
+.lesson-form select,
+.lesson-form textarea {
+  margin-top: 0.5rem;
+  width: 80%;
+  padding: 10px 12px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+  font-size: 0.95rem;
+  background-color: #fff;
+  transition: border-color 0.2s ease;
+}
+
+.lesson-form input:focus,
+.lesson-form select:focus,
+.lesson-form textarea:focus {
+  outline: none;
+  border-color: #E51B23;
+}
+
+.lesson-form button {
+  background-color: #E51B23;
+  color: white;
+  font-weight: bold;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 1rem;
+  margin-top: 1rem;
+  align-self: flex-start;
+  transition: background-color 0.2s ease;
+}
+
+.lesson-form button:hover {
+  background-color: #b4151c;
+}
+
+.lesson-list {
+  margin-top: 2.5rem;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1rem;
+  padding: 0;
+  list-style: none;
+}
+
+.lesson-list li {
+  background-color: white;
+  border-left: 6px solid #E51B23;
+  padding: 1rem 1.25rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  font-weight: 500;
+  color: #1D1D1B;
+  transition: transform 0.2s ease;
+}
+
+.lesson-list li:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+@media (max-width: 768px) {
+  .create-lesson {
+    padding: 1rem;
+  }
+
+  .lesson-form {
+    gap: 1rem;
+  }
+
+  .lesson-list {
+    grid-template-columns: 1fr;
+  }
+}
+
+/*----------------------------------------------------------
+ESTILOS PARA LA SECCIÓN ESTUDIANTES, CURSOS Y CALIFICACIONES
+----------------------------------------------------------*/
+
+.course-title {
+  font-weight: bold;        /* Negrita */
+  font-size: 15pt;          /* Aproximadamente 20px */
+  color: #E51B23;          /* Negro oscuro de tu paleta */
+  margin-bottom: 0.75rem;   /* Espacio inferior */
+  line-height: 1.4;         /* Altura de línea agradable */
+}
+
+
+.student-courses-section {
+  background-color: #FFF1E6;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 900px;
+  margin: 0 auto;
+  color: #1D1D1B;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.student-course-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.student-course-card {
+  background-color: white;
+  border-left: 6px solid #E51B23;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.student-course-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.student-course-header h3 {
+  margin: 0;
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.student-toggle-btn {
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 12px;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.student-toggle-btn:hover {
+  background-color: #b4151c;
+}
+
+.student-course-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-course-item {
+  background-color: #FFF1E6;
+  border: 1px solid #e0d3c4;
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  display: flex;
+  flex-direction: column; /* 🔁 Cambio importante */
+  align-items: flex-start; /* 🔁 Para alinear contenido a la izquierda */
+  font-size: 0.95rem;
+  gap: 0.75rem; /* 🔁 Espacio entre bloques internos */
+}
+
+
+.student-course-actions {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.student-btn {
+  padding: 6px 10px;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.student-btn.edit {
+  background-color: #FFD166;
+  color: #1D1D1B;
+}
+
+.student-btn.view {
+  background-color: #06D6A0;
+  color: white;
+}
+
+.student-btn.edit:hover {
+  background-color: #f1c74c;
+}
+
+.student-btn.view:hover {
+  background-color: #05b984;
+}
+
+.student-average {
+  font-weight: 500;
+  margin-left: 0.5rem;
+}
+
+.edit-grades-box {
+  margin-top: 1rem;
+  background-color: white;
+  padding: 1rem;
+  border: 1px dashed #E51B23;
+  border-radius: 8px;
+}
+
+.edit-grades-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1rem;
+}
+
+.edit-grades-table th,
+.edit-grades-table td {
+  padding: 0.5rem;
+  text-align: left;
+  border-bottom: 1px solid #ccc;
+}
+
+.edit-grades-table input {
+  width: 60px;
+  padding: 4px;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+}
+
+.edit-grades-buttons {
+  display: flex;
+  gap: 0.5rem;
+}
+
+/*---------------------------------------------------------
+ESTILOS PARA LA SECCIÓN RETROALIMENTACION PARA ESTUDIANTES
+----------------------------------------------------------*/
+
+.student-feedback-section {
+  background-color: #FFF1E6;
+  padding: 2rem;
+  border-radius: 12px;
+  max-width: 900px;
+  margin: 0 auto;
+  color: #1D1D1B;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.student-feedback-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 2rem;
+}
+
+.student-feedback-card {
+  background-color: white;
+  border-left: 6px solid #E51B23;
+  padding: 1rem 1.25rem;
+  border-radius: 10px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.student-feedback-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+}
+
+.student-feedback-list {
+  margin-top: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.student-feedback-item {
+  background-color: #FFF1E6;
+  padding: 1rem;
+  border: 1px solid #e0d3c4;
+  border-radius: 8px;
+}
+
+.lesson-feedback-list {
+  list-style: none;
+  padding: 0;
+  margin-top: 0.5rem;
+}
+
+.lesson-feedback-item {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.lesson-feedback-item input {
+  flex: 1;
+  padding: 6px 10px;
+  border-radius: 6px;
+  border: 1px solid #ccc;
+  font-size: 0.9rem;
+}
+
+.student-btn.update {
+  background-color: #f4a261;
+  color: #1D1D1B;
+}
+
+.student-btn.update:hover {
+  background-color: #de8547;
+}
+
+.student-btn.save {
+  background-color: #06D6A0;
+  color: white;
+  margin-left: 0.5rem;
+}
+
+.student-btn.save:hover {
+  background-color: #05b984;
+}
+
+
+/*----------------------------
+ESTILOS PARA LA SECCIÓN CURSOS
+----------------------------*/
+
+.toggle-form-btn {
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  padding: 0.6rem 1rem;
+  margin-bottom: 1rem;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.toggle-form-btn:hover {
+  background-color: #b7151b;
+}
+
+.course-form label {
+  display: block;
+  margin-bottom: 0.8rem;
+  font-weight: 600;
+  color: #1D1D1B;
+}
+
+.course-form input[type="text"],
+.course-form input[type="date"],
+.course-form textarea,
+.course-form select {
+  width: 100%;
+  padding: 0.5rem;
+  margin-top: 0.3rem;
+  border-radius: 4px;
+  border: 1px solid #ccc;
+  font-size: 1rem;
+  box-sizing: border-box;
+}
+
+.course-form textarea {
+  resize: vertical;
+  min-height: 60px;
+}
+
+.form-actions {
+  margin-top: 1rem;
+  display: flex;
+  gap: 1rem;
+}
+
+.form-actions button {
+  flex: 1;
+  padding: 0.6rem 0;
+  border: none;
+  border-radius: 5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.form-actions button[type="submit"] {
+  background-color: #E51B23;
+  color: white;
+}
+
+.form-actions button[type="submit"]:hover {
+  background-color: #b7151b;
+}
+
+.form-actions button[type="button"] {
+  background-color: #ddd;
+  color: #333;
+}
+
+.form-actions button[type="button"]:hover {
+  background-color: #ccc;
+}
+
+/* CONTENEDOR GENERAL */
+.section-block {
+  padding: 20px;
+}
+
+/* CURSO */
+.course-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem;
+}
+
+
+.course-item {
+  background: #fff5ee;
+  padding: 16px;
+  margin-bottom: 16px;
+  border-radius: 8px;
+  border-left: 5px solid #e74c3c;
+}
+
+.course-header .toggle-text {
+  display: block;
+  margin-top: 4px;
+  text-align: right;  /* para que quede a la derecha */
+  color: #c00;
+}
+
+
+.course-header .toggle-text {
+  display: block;  /* Hace que esté en una línea nueva */
+  margin-top: 4px; /* un pequeño espacio arriba */
+  float: none;     /* elimina el float para que se comporte en bloque */
+  color: #c00;
+}
+
+
+/* TABLA */
+.students-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+}
+
+
+.students-table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed; /* importante para que las columnas no se expandan demasiado */
+  word-wrap: break-word; /* que el texto se quiebre si es muy largo */
+}
+
+.students-table th,
+.students-table td {
+  border: 1px solid #ccc;
+  padding: 8px;
+  text-align: left;
+}
+
+.students-table th {
+  background-color: #f2f2f2;
+}
+
+@media (max-width: 768px) {
+  .course-item {
+    padding: 10px;
+    box-sizing: border-box;
+    width: 100%;
+  }
+
+  .students-table-wrapper {
+    overflow-x: auto;
+  }
+
+  .students-table th,
+  .students-table td {
+    padding: 8px 6px;
+    font-size: 13px;
+    white-space: nowrap; /* evita que el texto se parta en varias líneas, pero permite scroll */
+  }
+}
+
+
+
+
+
+/* Responsive */
+@media (max-width: 768px) {
+  .course-item {
+    padding: 0.75rem;
+  }
+
+  .form-actions {
+    flex-direction: column;
+  }
+
+  .form-actions button {
+    width: 100%;
+    margin-bottom: 0.5rem;
+  }
+}
+
+
+.course-card {
+  width: 100%;
+  max-width: 300px;
+  background-color: #FFF1E6;
+  border-left: 6px solid #E51B23;
+  border-radius: 12px;
+  padding: 1.5rem 1rem;
+  color: #1D1D1B;
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.course-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.12);
 }
 
 .course-card h3 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
   color: #E51B23;
+  font-size: 1.3rem;
+  font-weight: 600;
 }
 
 .course-card p {
   margin: 0.25rem 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
 }
 
+/* Botones */
 .course-buttons {
   display: flex;
   gap: 0.5rem;
-  margin-top: 0.8rem;
+  margin-top: 1rem;
 }
+
+.teacher-courses-summary ul,
+.teacher-notifications ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.course-item {
+  background: #FFF1E6;
+  border-left: 5px solid #E51B23;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #1D1D1B;
+}
+
+.btn-go-course {
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  padding: 0.4rem 0.8rem;
+  border-radius: 0.3rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background-color 0.3s ease;
+}
+
+.btn-go-course:hover {
+  background-color: #b7151b;
+}
+
+.notificaciones-lista {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.notificacion-item {
+  background: #FFF1E6;
+  border-left: 5px solid #E51B23;
+  padding: 1rem;
+  margin-bottom: 1rem;
+  border-radius: 0.5rem;
+  color: #1D1D1B;
+}
+
+.notificacion-item p {
+  margin: 0;
+}
+
+.fecha {
+  font-size: 0.85rem;
+  color: #555;
+  margin-top: 0.3rem;
+  display: block;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .course-item {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn-go-course {
+    margin-top: 0.6rem;
+    width: 100%;
+    text-align: center;
+  }
+}
+
+
+/*-------------------------------------------------------------
+ESTILOS PARA LA SECCIÓN/ COMPONENTES VISUALIZADOR DE PARTITURAS
+-------------------------------------------------------------*/
+
+.score-viewer-container {
+  margin-top: 2rem;
+  padding: 1rem;
+  background-color: #FFF1E6;
+  border: 1px solid #ccc;
+  border-radius: 6px;
+  color: #1D1D1B;
+  font-weight: 600;
+  text-align: center;
+}
+
+.score-viewer-title {
+  font-size: 1.2rem;
+  margin-bottom: 1rem;
+}
+
+.score-viewer-loading,
+.score-viewer-error {
+  font-style: italic;
+  color: #E51B23;
+}
+
+.score-viewer-xml {
+  max-height: 200px;
+  overflow-y: auto;
+  background-color: #fff;
+  padding: 0.5rem;
+  border: 1px dashed #aaa;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  text-align: left;
+}
+
+.score-viewer-button {
+  margin-top: 1rem;
+  padding: 0.5rem 1.2rem;
+  background-color: #E51B23;
+  color: white;
+  border: none;
+  border-radius: 4px;
+  font-weight: bold;
+  cursor: not-allowed;
+  opacity: 0.6;
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+  .score-viewer-container {
+    padding: 0.8rem;
+  }
+
+  .score-viewer-title {
+    font-size: 1rem;
+  }
+
+  .score-viewer-button {
+    width: 100%;
+    font-size: 1rem;
+  }
+}
+
+
+.score-viewer-container {
+  background: #FFF1E6;
+  padding: 1rem;
+  border-radius: 10px;
+  border: 1px solid #ddd;
+  color: #1D1D1B;
+}
+
+.score-viewer-osmd {
+  margin: 1rem 0;
+}
+
+.score-viewer-waveform {
+  width: 100%;
+  max-width: 400px;
+  height: 100px;
+  border: 2px solid #E51B23;
+  border-radius: 8px;
+  margin: 1rem auto;
+  display: block;
+}
+
+
+.score-viewer-error {
+  color: red;
+  font-weight: bold;
+}
+
+.score-viewer-audio {
+  margin-top: 1rem;
+}
+
+
+/*-------------------------------------
+ESTILOS PARA LA SUCRIPCION A LOS CURSOS
+-------------------------------------*/
 
 .enroll-btn,
 .details-btn {
   flex: 1;
-  padding: 0.5rem;
+  padding: 0.6rem 0.8rem;
   border: none;
-  border-radius: 4px;
-  font-weight: bold;
+  border-radius: 6px;
+  font-weight: 600;
   cursor: pointer;
   font-size: 0.9rem;
+  transition: all 0.2s ease;
 }
 
 .enroll-btn {
@@ -1233,15 +2396,40 @@ ESTILOS PARA LA SECCION CURSOS
   color: white;
 }
 
+.enroll-btn:hover {
+  background-color: #c9151d;
+}
+
 .details-btn {
   background-color: transparent;
-  border: 1px solid #E51B23;
+  border: 2px solid #E51B23;
   color: #E51B23;
 }
 
 .details-btn:hover {
   background-color: #fce0dc;
 }
+
+/* Responsive */
+@media (max-width: 768px) {
+  .course-card {
+    width: 100%;
+    max-width: 90%;
+    padding: 1rem;
+  }
+
+  .course-card h3 {
+    font-size: 1.2rem;
+  }
+
+  .enroll-btn,
+  .details-btn {
+    font-size: 0.85rem;
+    padding: 0.5rem;
+  }
+}
+
+
 /*---------------------------------------
 ESTILOS PARA LA SECCION PERFIL DE USUARIO 
 ---------------------------------------*/

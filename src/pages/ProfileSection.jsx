@@ -10,12 +10,19 @@ export default function ProfileSection() {
     lastName: '',
     email: '',
     courses: [],
+    level: '',
+    instrument: '',
+    goal: '',
+    emailVerified: false,
   });
   const [editing, setEditing] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
     email: '',
+    level: '',
+    instrument: '',
+    goal: '',
   });
 
   useEffect(() => {
@@ -27,15 +34,17 @@ export default function ProfileSection() {
         if (docSnap.exists()) {
           const data = docSnap.data();
           setUserData({
-            firstName: data.firstName || '',
-            lastName: data.lastName || '',
+            ...data,
             email: user.email || '',
-            courses: data.courses || [],
+            emailVerified: user.emailVerified,
           });
           setFormData({
             firstName: data.firstName || '',
             lastName: data.lastName || '',
             email: user.email || '',
+            level: data.level || '',
+            instrument: data.instrument || '',
+            goal: data.goal || '',
           });
         }
       }
@@ -53,22 +62,21 @@ export default function ProfileSection() {
     if (!user) return;
 
     try {
-      // Actualizar datos en Firestore
       await updateDoc(doc(db, 'users', user.uid), {
         firstName: formData.firstName,
         lastName: formData.lastName,
+        level: formData.level,
+        instrument: formData.instrument,
+        goal: formData.goal,
       });
 
-      // Actualizar correo en Firebase Auth si cambió
       if (formData.email !== user.email) {
         await updateEmail(user, formData.email);
       }
 
       setUserData((prev) => ({
         ...prev,
-        firstName: formData.firstName,
-        lastName: formData.lastName,
-        email: formData.email,
+        ...formData,
       }));
       setEditing(false);
     } catch (error) {
@@ -113,6 +121,49 @@ export default function ProfileSection() {
             onChange={handleChange}
             disabled={!editing}
           />
+          {!userData.emailVerified && (
+            <span style={{ color: 'orange', fontSize: '0.9rem' }}>
+              (Correo no verificado)
+            </span>
+          )}
+        </label>
+
+        <label>
+          Nivel musical:
+          <select
+            name="level"
+            value={formData.level}
+            onChange={handleChange}
+            disabled={!editing}
+          >
+            <option value="">Selecciona una opción</option>
+            <option value="Principiante">Principiante</option>
+            <option value="Intermedio">Intermedio</option>
+            <option value="Avanzado">Avanzado</option>
+          </select>
+        </label>
+
+        <label>
+          Instrumento principal:
+          <input
+            type="text"
+            name="instrument"
+            value={formData.instrument}
+            onChange={handleChange}
+            disabled={!editing}
+          />
+        </label>
+
+        <label>
+          Objetivo musical:
+          <input
+            type="text"
+            name="goal"
+            value={formData.goal}
+            onChange={handleChange}
+            disabled={!editing}
+            placeholder="Ej. Quiero tocar en una banda, mejorar técnica, etc."
+          />
         </label>
 
         <div className="profile-actions">
@@ -125,19 +176,6 @@ export default function ProfileSection() {
             </>
           )}
         </div>
-      </div>
-
-      <div className="student-courses" style={{ marginTop: '2rem' }}>
-        <h3>Cursos inscritos:</h3>
-        {userData.courses.length > 0 ? (
-          <ul>
-            {userData.courses.map((course, index) => (
-              <li key={index}>{course}</li>
-            ))}
-          </ul>
-        ) : (
-          <p>Aún no estás inscrito en ningún curso.</p>
-        )}
       </div>
 
       <div className="danger-zone" style={{ marginTop: '2rem' }}>

@@ -25,9 +25,11 @@ export default function FeedbackSection() {
       <h2>Retroalimentación</h2>
       {feedbackList.map((item) => (
         <div key={item.id} className="feedback-card">
-          <h3>📚 {item.lessonTitle}</h3>
-          <p><strong>🗓️ Fecha:</strong> {item.date}</p>
-          <p><strong>💬 Comentario:</strong> {item.comment}</p>
+          <div className="feedback-header">
+            <h3>📚 {item.lessonTitle}</h3>
+            <span className="feedback-date">🗓️ {item.date}</span>
+          </div>
+          <p className="feedback-comment">💬 {item.comment}</p>
         </div>
       ))}
     </div>

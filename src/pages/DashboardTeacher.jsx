@@ -9,7 +9,7 @@ import {
   faChalkboardTeacher,
   faBookOpen,
   faUsers,
-  faComments,
+  // faComments, // eliminado
   faUserCog,
   faAngleLeft,
   faAngleRight,
@@ -21,7 +21,7 @@ import HomeTeacher from './HomeTeacher';
 import CoursesTeacherSection from './CoursesTeacherSection';
 import CreateLessonsSection from './CreateLessonsSection';
 import StudentsSection from './StudentsSection';
-import FeedbackSectionTeacher from './FeedbackSectionTeacher';
+// import FeedbackSectionTeacher from './FeedbackSectionTeacher'; // eliminado
 import ProfileSectionTeacher from './ProfileSectionTeacher';
 
 export default function DashboardTeacher() {
@@ -31,7 +31,6 @@ export default function DashboardTeacher() {
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false); // Para escritorio
 
   useEffect(() => {
-    // Activar la clase body-dashboard al entrar al dashboard
     document.body.classList.add('body-dashboard');
 
     const auth = getAuth();
@@ -51,12 +50,10 @@ export default function DashboardTeacher() {
     });
 
     return () => {
-      // Limpiar la suscripción y remover clase al desmontar el componente
       unsubscribe();
       document.body.classList.remove('body-dashboard');
     };
   }, []);
-
 
   const handleNavClick = (section) => {
     setSelectedSection(section);
@@ -81,8 +78,8 @@ export default function DashboardTeacher() {
         return <CreateLessonsSection />;
       case 'students':
         return <StudentsSection />;
-      case 'feedback':
-        return <FeedbackSectionTeacher />;
+      // case 'feedback':
+      //   return <FeedbackSectionTeacher />; // eliminado
       case 'profile':
         return <ProfileSectionTeacher />;
       default:
@@ -100,7 +97,7 @@ export default function DashboardTeacher() {
             isSidebarCollapsed ? 'collapsed' : ''
           }`}
         >
-          <h2 className="logo">Clariplay</h2>
+          <h2 className="logo-dash">Clariplay</h2>
           <nav className="nav">
             <button onClick={() => handleNavClick('home')}>
               <FontAwesomeIcon icon={faHome} /> <span>Inicio</span>
@@ -114,9 +111,7 @@ export default function DashboardTeacher() {
             <button onClick={() => handleNavClick('students')}>
               <FontAwesomeIcon icon={faUsers} /> <span>Estudiantes</span>
             </button>
-            <button onClick={() => handleNavClick('feedback')}>
-              <FontAwesomeIcon icon={faComments} /> <span>Retroalimentación</span>
-            </button>
+            {/* Botón feedback eliminado */}
             <button onClick={() => handleNavClick('profile')}>
               <FontAwesomeIcon icon={faUserCog} /> <span>Perfil</span>
             </button>
@@ -137,7 +132,7 @@ export default function DashboardTeacher() {
               courses: 'Mis cursos',
               lessons: 'Crear lecciones',
               students: 'Estudiantes',
-              feedback: 'Retroalimentación',
+              // feedback: 'Retroalimentación', // eliminado
               profile: 'Perfil',
             }[selectedSection]}
           </h1>

@@ -1,78 +1,148 @@
-export default function CoursesSection() {
-  const enrolledCourses = [
-    {
-      id: 1,
-      title: 'Guitarra Acústica - Nivel Principiante',
-      teacher: 'Juan Pérez',
-      instrument: 'Guitarra',
-      level: 'Principiante',
-      modality: 'Virtual',
-      schedule: 'Lunes y miércoles - 18h00',
-    },
-    {
-      id: 2,
-      title: 'Piano Clásico - Nivel Intermedio',
-      teacher: 'María López',
-      instrument: 'Piano',
-      level: 'Intermedio',
-      modality: 'Presencial',
-      schedule: 'Martes y jueves - 15h30',
-    },
-  ];
+// src/components/StudentCourses.jsx
+import React, { useEffect, useState } from 'react';
+import { getAuth } from 'firebase/auth';
+import {
+  collection,
+  getDocs,
+  query,
+  where,
+  addDoc,
+  doc,
+  getDoc,
+} from 'firebase/firestore';
+import { db } from '../firebase';
 
-  const availableCourses = [
-    {
-      id: 3,
-      title: 'Violín Básico para Niños',
-      teacher: 'Carlos Jiménez',
-      instrument: 'Violín',
-      level: 'Básico',
-      modality: 'Virtual',
-      schedule: 'Sábados - 10h00',
-    },
-    {
-      id: 4,
-      title: 'Canto Popular - Nivel Avanzado',
-      teacher: 'Ana Torres',
-      instrument: 'Voz',
-      level: 'Avanzado',
-      modality: 'Virtual',
-      schedule: 'Viernes - 17h00',
-    },
-  ];
+export default function StudentCourses() {
+  const auth = getAuth();
+  const user = auth.currentUser;
+
+  const [availableCourses, setAvailableCourses] = useState([]);
+  const [enrolledCourses, setEnrolledCourses] = useState([]);
+  const [loading, setLoading] = useState(true);
+
+  // Cargar cursos disponibles
+  useEffect(() => {
+    if (!user) return;
+
+    const loadCourses = async () => {
+      setLoading(true);
+
+      try {
+        const coursesSnapshot = await getDocs(collection(db, 'courses'));
+        const allCourses = coursesSnapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+
+        // Obtener inscripciones del estudiante
+        const enrollQuery = query(
+          collection(db, 'enrollments'),
+          where('studentId', '==', user.uid)
+        );
+        const enrollSnapshot = await getDocs(enrollQuery);
+        const enrolledCourseIds = enrollSnapshot.docs.map(doc => doc.data().courseId);
+
+        // Separar cursos inscritos y disponibles
+        const enrolled = allCourses.filter(course => enrolledCourseIds.includes(course.id));
+        const available = allCourses.filter(course => !enrolledCourseIds.includes(course.id));
+
+        setEnrolledCourses(enrolled);
+        setAvailableCourses(available);
+      } catch (error) {
+        console.error('Error al cargar cursos:', error);
+      }
+
+      setLoading(false);
+    };
+
+    loadCourses();
+  }, [user]);
+
+  // ✅ Inscripción con nombre completo desde la colección `users`
+  const handleEnroll = async (courseId) => {
+    if (!user) {
+      alert('Debes iniciar sesión para inscribirte');
+      return;
+    }
+
+    try {
+      const enrollRef = collection(db, 'enrollments');
+      const q = query(
+        enrollRef,
+        where('courseId', '==', courseId),
+        where('studentId', '==', user.uid)
+      );
+      const querySnapshot = await getDocs(q);
+
+      if (!querySnapshot.empty) {
+        alert('Ya estás inscrito en este curso.');
+        return;
+      }
+
+      // Obtener los datos del estudiante desde la colección 'users'
+      const userDocRef = doc(db, 'users', user.uid);
+      const userSnap = await getDoc(userDocRef);
+
+      if (!userSnap.exists()) {
+        alert('No se encontraron tus datos de perfil.');
+        return;
+      }
+
+      const userData = userSnap.data();
+      const fullName = `${userData.firstName} ${userData.lastName}`;
+
+      await addDoc(enrollRef, {
+        courseId,
+        studentId: user.uid,
+        studentName: fullName,
+        studentEmail: userData.email || user.email || 'Sin correo',
+        enrolledAt: new Date()
+      });
+
+      alert('Inscripción exitosa ✅');
+
+      // Actualizar listas sin recargar todo
+      const course = availableCourses.find(c => c.id === courseId);
+      setEnrolledCourses(prev => [...prev, course]);
+      setAvailableCourses(prev => prev.filter(c => c.id !== courseId));
+    } catch (error) {
+      console.error('Error al inscribirse:', error);
+      alert('Error al inscribirse. Intenta de nuevo.');
+    }
+  };
 
   return (
     <div className="courses-section">
-      <h2>🎓 Cursos Inscritos</h2>
+      <h2>Cursos Inscritos</h2>
+      {loading && <p>Cargando cursos...</p>}
       <div className="course-list">
         {enrolledCourses.map((course) => (
           <div key={course.id} className="course-card enrolled">
             <h3>{course.title}</h3>
-            <p><strong>Profesor:</strong> {course.teacher}</p>
+            <p><strong>Profesor:</strong> {course.teacherName || 'Profesor asignado'}</p>
             <p><strong>Instrumento:</strong> {course.instrument}</p>
             <p><strong>Nivel:</strong> {course.level}</p>
-            <p><strong>Modalidad:</strong> {course.modality}</p>
-            <p><strong>Horario:</strong> {course.schedule}</p>
           </div>
         ))}
+        {enrolledCourses.length === 0 && !loading && <p>No estás inscrito en ningún curso.</p>}
       </div>
 
-      <h2 style={{ marginTop: '2rem' }}>🆕 Cursos Disponibles</h2>
+      <h2 style={{ marginTop: '2rem' }}>Cursos Disponibles</h2>
       <div className="course-list">
         {availableCourses.map((course) => (
           <div key={course.id} className="course-card available">
             <h3>{course.title}</h3>
-            <p><strong>Profesor:</strong> {course.teacher}</p>
+            <p><strong>Profesor:</strong> {course.teacherName || 'Profesor asignado'}</p>
             <p><strong>Instrumento:</strong> {course.instrument}</p>
             <p><strong>Nivel:</strong> {course.level}</p>
-            <p><strong>Modalidad:</strong> {course.modality}</p>
-            <p><strong>Horario:</strong> {course.schedule}</p>
             <div className="course-buttons">
-              <button className="enroll-btn">Inscribirse</button>
-              <button className="details-btn">Ver más</button>
+              <button className="enroll-btn" onClick={() => handleEnroll(course.id)}>
+                Inscribirse
+              </button>
+              <button className="details-btn">
+                Ver más
+              </button>
             </div>
           </div>
         ))}
+        {availableCourses.length === 0 && !loading && <p>No hay cursos disponibles en este momento.</p>}
       </div>
     </div>
   );
