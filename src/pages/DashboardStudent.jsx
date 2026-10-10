@@ -98,21 +98,21 @@ export default function DashboardStudent() {
         >
           <h2 className="logo-dash">Clariplay</h2>
           <nav className="nav">
-            <button onClick={() => handleNavClick('home')}>
+            <button className={selectedSection === 'home' ? 'active' : ''} onClick={() => handleNavClick('home')}>
               <FontAwesomeIcon icon={faHome} /> <span>Inicio</span>
             </button>
-            <button onClick={() => handleNavClick('lessons')}>
+            <button className={selectedSection === 'lessons' ? 'active' : ''} onClick={() => handleNavClick('lessons')}>
               <FontAwesomeIcon icon={faMusic} /> <span>Mis lecciones</span>
             </button>
-            <button onClick={() => handleNavClick('grades')}>
+            <button className={selectedSection === 'grades' ? 'active' : ''} onClick={() => handleNavClick('grades')}>
               <FontAwesomeIcon icon={faClipboard} /> <span>Calificaciones</span>
             </button>
-            <button onClick={() => handleNavClick('courses')}>
+            <button className={selectedSection === 'courses' ? 'active' : ''} onClick={() => handleNavClick('courses')}>
               <FontAwesomeIcon icon={faBook} /> <span>Cursos</span>
             </button>
             {/* Botón feedback eliminado */}
 
-            <button onClick={() => handleNavClick('profile')}>
+            <button className={selectedSection === 'profile' ? 'active' : ''} onClick={() => handleNavClick('profile')}>
               <FontAwesomeIcon icon={faUserCog} /> <span>Perfil</span>
             </button>
 

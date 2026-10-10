@@ -83,7 +83,7 @@ function RegisterTeacher() {
         />
         <button type="submit">Registrarse como Profesor</button>
       </form>
-      {error && <p style={{ color: 'red', marginTop: '1rem' }}>{error}</p>}
+      {error && <p className="error">{error}</p>}
     </div>
   );
 }

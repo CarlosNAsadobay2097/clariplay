@@ -1,4 +1,4 @@
-const { onDocumentCreated } = require("firebase-functions/v2/firestore");
+const { onDocumentCreated, onDocumentWritten } = require("firebase-functions/v2/firestore");
 const { setGlobalOptions } = require("firebase-functions/v2/options");
 const admin = require("firebase-admin");
 
@@ -277,5 +277,47 @@ exports.notifyCourseHit10 = onDocumentCreated("enrollments/{enrollmentId}", asyn
     }
   } catch (error) {
     console.error("❌ Error al verificar hito de curso:", error);
+  }
+});
+
+// ⏰ Notificar al estudiante cuando el profesor amplía el plazo o reabre una lección
+exports.notifyLessonAccessChange = onDocumentWritten("lessonAccess/{accessId}", async (event) => {
+  const after = event.data?.after?.exists ? event.data.after.data() : null;
+  if (!after) return; // eliminado
+  const before = event.data?.before?.exists ? event.data.before.data() : {};
+
+  const { studentId, lessonId, courseId } = after;
+  if (!studentId || !lessonId) return;
+
+  const reopened = (after.extraAttempts || 0) > (before.extraAttempts || 0);
+  const beforeDue = before.dueDate ? before.dueDate.toMillis() : null;
+  const afterDue = after.dueDate ? after.dueDate.toMillis() : null;
+  const extended = afterDue && afterDue !== beforeDue;
+  if (!reopened && !extended) return;
+
+  try {
+    const lessonSnap = await db.collection("lessons").doc(lessonId).get();
+    const lessonTitle = lessonSnap.exists ? lessonSnap.data().title : "una lección";
+    const dueText = afterDue
+      ? new Date(afterDue).toLocaleString("es-EC", { timeZone: "America/Guayaquil", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+      : null;
+
+    const message = reopened
+      ? `Tu profesor reabrió "${lessonTitle}": puedes grabarla y enviarla otra vez${dueText ? ` hasta el ${dueText}` : ""}.`
+      : `Tu profesor amplió el plazo de "${lessonTitle}" hasta el ${dueText}.`;
+
+    await db.collection("notifications").doc().set({
+      userId: studentId,
+      type: "lessonAccess",
+      message,
+      lessonId,
+      courseId: courseId || null,
+      read: false,
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+      expiresAt: admin.firestore.Timestamp.fromDate(new Date(Date.now() + 72 * 60 * 60 * 1000)),
+    });
+    console.log("✅ Notificación de plazo/reapertura enviada al estudiante");
+  } catch (error) {
+    console.error("❌ Error notificando cambio de plazo:", error);
   }
 });

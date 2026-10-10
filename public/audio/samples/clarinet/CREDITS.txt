@@ -1,0 +1,4 @@
+Muestras de clarinete tomadas del paquete npm "tonejs-instrument-clarinet-mp3" v1.1.2
+(proyecto tonejs-instruments, licencia MIT):
+https://github.com/Makefully-Studios/tonejs-instruments
+https://github.com/nbrosowsky/tonejs-instruments

@@ -123,7 +123,7 @@ export default function ProfileSectionTeacher() {
             disabled={!editing}
           />
           {!userData.emailVerified && (
-            <span style={{ color: 'orange', fontSize: '0.9rem' }}>
+            <span className="warn-text">
               (Correo no verificado)
             </span>
           )}
@@ -198,7 +198,7 @@ export default function ProfileSectionTeacher() {
         <button className="delete-account-btn" disabled>
           Eliminar mi cuenta
         </button>
-        <p style={{ fontSize: '0.9rem', color: '#666' }}>
+        <p className="muted-text">
           (Esta función aún no está habilitada por seguridad).
         </p>
       </div>

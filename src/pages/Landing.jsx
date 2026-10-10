@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import logo from '../assets/Logo_6.svg';
+import aboutImage from '../assets/about-image.jpg';
 
 function Landing() {
   useEffect(() => {
@@ -25,7 +26,7 @@ function Landing() {
 
       <section className="about">
         <h2>¿Qué es Clariplay?</h2>
-        <img src={require('../assets/about-image.jpg')} alt="Sobre Clariplay" className="about-image" />
+        <img src={aboutImage} alt="Sobre Clariplay" className="about-image" />
         <p>
           Clariplay es una plataforma educativa donde estudiantes y profesores de música pueden compartir
           lecciones, partituras interactivas y grabaciones para retroalimentación directa.

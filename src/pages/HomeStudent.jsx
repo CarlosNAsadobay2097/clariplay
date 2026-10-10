@@ -12,6 +12,7 @@ export default function HomeStudent({ user }) {
     newCourse: 'Nuevos Cursos',
     newLesson: 'Nuevas Lecciones',
     newGrade: 'Nuevas Calificaciones',
+    lessonAccess: 'Plazos y reintentos',
     otros: 'Otras Notificaciones'
   };
 

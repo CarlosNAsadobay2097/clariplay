@@ -13,6 +13,9 @@ import {
 } from 'firebase/firestore';
 import { ref, deleteObject } from 'firebase/storage';
 import { db, storage } from '../firebase';
+import { fetchSafeMusicXML } from '../utils/musicxmlSecurity';
+import { formatDue, toDate } from '../utils/lessonStatus';
+import { Timestamp } from 'firebase/firestore';
 
 export default function LessonsByCourse() {
   const auth = getAuth();
@@ -24,6 +27,7 @@ export default function LessonsByCourse() {
 
   const osmdContainerRef = useRef(null);
   const osmdInstanceRef = useRef(null);
+  const [scoreError, setScoreError] = useState(null);
 
   // Cargar cursos del profesor
   useEffect(() => {
@@ -71,20 +75,32 @@ export default function LessonsByCourse() {
     if (!selectedLesson || selectedLesson.type !== 'practical' || !selectedLesson.xmlFileUrl) return;
     if (!osmdContainerRef.current) return;
 
-    const osmd = new OpenSheetMusicDisplay(osmdContainerRef.current, {
+    const container = osmdContainerRef.current;
+    const controller = new AbortController();
+    setScoreError(null);
+
+    const osmd = new OpenSheetMusicDisplay(container, {
       drawingParameters: 'compacttight',
       autoResize: true,
     });
 
     osmdInstanceRef.current = osmd;
 
-    fetch(selectedLesson.xmlFileUrl)
-      .then(res => res.text())
+    // 🛡️ La partitura se valida y sanea antes de dibujarla
+    fetchSafeMusicXML(selectedLesson.xmlFileUrl, { signal: controller.signal })
       .then(xml => osmd.load(xml))
-      .then(() => osmd.render())
+      .then(() => { if (!controller.signal.aborted) osmd.render(); })
       .catch(err => {
+        if (controller.signal.aborted) return;
         console.error("Error al renderizar partitura:", err);
+        setScoreError(err.message || 'No se pudo mostrar la partitura');
       });
+
+    return () => {
+      controller.abort();
+      osmdInstanceRef.current = null;
+      container.innerHTML = '';
+    };
   }, [selectedLesson]);
 
   // Soft delete de lección
@@ -122,7 +138,7 @@ export default function LessonsByCourse() {
   };
 
   return (
-    <div>
+    <div className="lessons-by-course">
       <h2>Mis Cursos y Lecciones</h2>
 
       {courses.length === 0 && <p>No tienes cursos creados.</p>}
@@ -131,29 +147,38 @@ export default function LessonsByCourse() {
         const lessons = lessonsByCourse[course.id] || [];
 
         return (
-          <div key={course.id} style={{ marginBottom: '2rem', border: '1px solid #ccc', padding: '1rem', borderRadius: '6px' }}>
-            <h3>{course.title} — Nivel: {course.level} — Instrumento: {course.instrument}</h3>
+          <div key={course.id} className="lbc-course">
+            <h3 className="lbc-course-title">{course.title} <span className="lbc-meta">Nivel: {course.level} · {course.instrument}</span></h3>
 
             {lessons.length === 0 && <p>No hay lecciones en este curso.</p>}
 
             {lessons.map(lesson => (
-              <div key={lesson.id} style={{ marginBottom: '1rem', padding: '0.5rem', background: '#f9f9f9', borderRadius: '4px' }}>
-                <strong>{lesson.title}</strong> — Tipo: {lesson.type === 'practical' ? 'Práctica' : 'Teoría'}
-                <p>{lesson.description}</p>
+              <div key={lesson.id} className="lbc-lesson">
+                <div className="lbc-lesson-info">
+                  <strong>{lesson.title}</strong>
+                  <span className={`lbc-badge ${lesson.type === 'practical' ? 'is-practical' : 'is-theory'}`}>
+                    {lesson.type === 'practical' ? 'Práctica' : 'Teoría'}
+                  </span>
+                  {lesson.type === 'practical' && (
+                    <DueEditor lesson={lesson} />
+                  )}
+                  {lesson.description && <p>{lesson.description}</p>}
+                </div>
 
-                <button
-                  onClick={() => handleDeleteLesson(lesson.id, lesson.xmlFileUrl, lesson.imageUrl)}
-                  style={{ marginRight: '0.5rem', backgroundColor: '#E51B23', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Eliminar
-                </button>
-
-                <button
-                  onClick={() => setSelectedLesson(lesson)}
-                  style={{ backgroundColor: '#1D1D1B', color: 'white', border: 'none', padding: '0.3rem 0.7rem', borderRadius: '4px', cursor: 'pointer' }}
-                >
-                  Ver más
-                </button>
+                <div className="lbc-actions">
+                  <button
+                    className="btn-ghost"
+                    onClick={() => setSelectedLesson(lesson)}
+                  >
+                    Ver más
+                  </button>
+                  <button
+                    className="btn-danger"
+                    onClick={() => handleDeleteLesson(lesson.id, lesson.xmlFileUrl, lesson.imageUrl)}
+                  >
+                    Eliminar
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -162,66 +187,77 @@ export default function LessonsByCourse() {
 
       {/* Modal de detalle */}
       {selectedLesson && (
-        <div style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100vh',
-          background: 'rgba(0,0,0,0.5)',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          zIndex: 1000
-        }}>
-          <div style={{
-            background: 'white',
-            padding: '2rem',
-            borderRadius: '8px',
-            maxWidth: '800px',
-            width: '100%',
-            maxHeight: '85vh',
-            overflowY: 'auto',
-            position: 'relative'
-          }}>
+        <div className="modal-overlay" onClick={() => setSelectedLesson(null)}>
+          <div className="modal-content modal-large" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+            <button className="modal-close" onClick={() => setSelectedLesson(null)} aria-label="Cerrar">
+              <i className="fas fa-xmark" aria-hidden="true"></i>
+            </button>
             <h2>{selectedLesson.title}</h2>
             <p><strong>Tipo:</strong> {selectedLesson.type === 'practical' ? 'Práctica' : 'Teoría'}</p>
             <p>{selectedLesson.description}</p>
 
             {/* Partitura */}
             {selectedLesson.type === 'practical' && selectedLesson.xmlFileUrl && (
-              <div style={{ marginTop: '1rem' }}>
+              <div className="modal-score">
                 <h4>Partitura:</h4>
-                <div ref={osmdContainerRef} style={{ width: '100%', overflowX: 'auto' }} />
+                {scoreError && <p className="score-viewer-error" role="alert">{scoreError}</p>}
+                <div className="score-paper">
+                  <div ref={osmdContainerRef} className="score-viewer-osmd" />
+                </div>
               </div>
             )}
 
             {/* Imagen teórica */}
             {selectedLesson.type === 'theory' && selectedLesson.imageUrl && (
-              <img src={selectedLesson.imageUrl} alt="Imagen teórica" style={{ maxWidth: '100%', borderRadius: '6px' }} />
+              <img src={selectedLesson.imageUrl} alt="Imagen teórica" className="lessons-card-image" />
             )}
-
-            <button
-              onClick={() => setSelectedLesson(null)}
-              style={{
-                maxWidth: '15%',
-                marginTop: '1rem',
-                backgroundColor: '#E51B23',
-                color: 'white',
-                border: 'none',
-                padding: '0.5rem 1rem',
-                borderRadius: '4px',
-                cursor: 'pointer',
-                position: 'absolute',
-                top: '1rem',
-                right: '1rem'
-              }}
-            >
-              ✕
-            </button>
           </div>
         </div>
       )}
     </div>
+  );
+}
+
+/** Fecha límite general de una lección (para todo el curso), editable en línea. */
+function DueEditor({ lesson }) {
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState('');
+  const due = toDate(lesson.dueDate);
+
+  const start = () => {
+    const base = due || new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+    const local = new Date(base.getTime() - base.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    setValue(local);
+    setEditing(true);
+  };
+
+  const save = async (clear = false) => {
+    try {
+      await updateDoc(doc(db, 'lessons', lesson.id), {
+        dueDate: clear || !value ? null : Timestamp.fromDate(new Date(value)),
+      });
+      setEditing(false);
+    } catch (err) {
+      console.error('Error guardando la fecha límite:', err);
+      alert('No se pudo guardar la fecha límite');
+    }
+  };
+
+  if (!editing) {
+    return (
+      <span className="due-inline">
+        <i className="far fa-calendar" aria-hidden="true"></i>
+        {due ? `Vence: ${formatDue(due)}` : 'Sin fecha límite'}
+        <button type="button" className="link-btn" onClick={start}>Cambiar</button>
+      </span>
+    );
+  }
+  return (
+    <span className="due-inline is-editing">
+      <input type="datetime-local" value={value} onChange={(e) => setValue(e.target.value)} />
+      <button type="button" className="student-btn save" onClick={() => save(false)}>Guardar</button>
+      {due && <button type="button" className="student-btn cancel" onClick={() => save(true)}>Quitar</button>}
+      <button type="button" className="link-btn" onClick={() => setEditing(false)}>Cancelar</button>
+    </span>
   );
 }

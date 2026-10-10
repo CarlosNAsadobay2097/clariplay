@@ -1,8 +1,8 @@
-import { render, screen } from '@testing-library/react';
-import App from './App';
+// Archivo heredado de Create React App. Las pruebas reales están en
+// src/utils/*.test.js (ejecuta: npm test).
+import { test, expect } from 'vitest';
+import { renderLessonContent } from './utils/safeHtml';
 
-test('renders learn react link', () => {
-  render(<App />);
-  const linkElement = screen.getByText(/learn react/i);
-  expect(linkElement).toBeInTheDocument();
+test('el contenido de las lecciones se muestra saneado', () => {
+  expect(renderLessonContent('<b>ok</b><script>alert(1)</script>')).toBe('<b>ok</b>');
 });

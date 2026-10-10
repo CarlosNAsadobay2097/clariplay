@@ -1,0 +1,67 @@
+rules_version = '2';
+
+// Reglas de Firebase Storage para Clariplay (PROPUESTA).
+// Validan en el servidor lo mismo que el frontend: aunque alguien se salte la
+// app y llame directo a la API, no podrá subir archivos peligrosos ni enormes.
+//
+// IMPORTANTE: revisa primero las reglas actuales en la consola de Firebase
+// (Storage > Reglas). Para desplegar estas, añade en firebase.json:
+//   "storage": { "rules": "storage.rules" }
+// y ejecuta:  firebase deploy --only storage
+
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function userRole() {
+      return firestore.get(/databases/(default)/documents/users/$(request.auth.uid)).data.role;
+    }
+
+    function ownsCourse(courseId) {
+      return firestore.get(/databases/(default)/documents/courses/$(courseId)).data.createdBy == request.auth.uid;
+    }
+
+    // Partituras MusicXML de las lecciones (se suben como texto ya saneado)
+    match /lessons/{courseId}/{lessonId}/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userRole() == 'teacher'
+        && ownsCourse(courseId)
+        && fileName == 'score.musicxml'
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('text/plain.*');
+      allow delete: if signedIn() && userRole() == 'teacher' && ownsCourse(courseId);
+    }
+
+    // Imágenes de clases teóricas
+    match /theoryImages/{courseId}/{lessonId}/{fileName} {
+      allow read: if signedIn();
+      allow create, update: if signedIn()
+        && userRole() == 'teacher'
+        && ownsCourse(courseId)
+        && fileName.matches('image\\.(png|jpg)')
+        && request.resource.size < 5 * 1024 * 1024
+        && request.resource.contentType.matches('image/(png|jpeg)');
+      allow delete: if signedIn() && userRole() == 'teacher' && ownsCourse(courseId);
+    }
+
+    // Grabaciones de los estudiantes
+    match /student-submissions/{courseId}/{lessonId}/{studentId}/{fileName} {
+      allow read: if signedIn()
+        && (request.auth.uid == studentId || ownsCourse(courseId));
+      allow create: if signedIn()
+        && request.auth.uid == studentId
+        && fileName.matches('audio(-[0-9]+)?\\.webm')
+        && request.resource.size < 30 * 1024 * 1024
+        && request.resource.contentType.matches('audio/webm.*');
+    }
+
+    // Todo lo demás, cerrado
+    match /{allPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}

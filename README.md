@@ -1,70 +1,44 @@
-# Getting Started with Create React App
+# Clariplay
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+Plataforma para aprender, practicar y compartir música con partituras interactivas (React + Vite + Firebase).
 
-## Available Scripts
+## Requisitos
 
-In the project directory, you can run:
+- Node.js **20.19 o superior** (recomendado 22 LTS)
 
-### `npm start`
+## Comandos
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+| Comando | Qué hace |
+|---|---|
+| `npm install` | Instala dependencias (la primera vez y tras actualizar) |
+| `npm run dev` o `npm start` | Servidor local en http://localhost:3000 |
+| `npm run build` | Compila para producción en la carpeta `build/` |
+| `npm run preview` | Sirve la versión compilada para probarla |
+| `npm test` | Ejecuta las pruebas (Vitest) |
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+## Estructura relevante
 
-### `npm test`
+- `index.html` (raíz): plantilla de la app. El punto de entrada es `src/main.jsx` → `src/App.jsx`.
+- `src/utils/musicxmlSecurity.js`: validación y saneamiento de MusicXML e imágenes antes de mostrarlas o subirlas.
+- `src/utils/safeHtml.js`: saneamiento del HTML de las clases teóricas (DOMPurify).
+- `src/components/ScorePlayer.jsx` + `src/hooks/useScorePlayer.js` + `src/utils/scoreTimeline.js`: reproductor de partituras (play/pausa/stop, velocidad, metrónomo, loop A-B, volumen, instrumento, zoom) sincronizado con el reloj de audio.
+- `src/utils/lessonStatus.js`: estado de cada lección (pendiente, enviada, calificada, reabierta, vencida) con fechas límite y reintentos.
+- `src/css/main.css`: sistema visual (variables en `:root`).
+- `firestore.rules.ejemplo`: reglas sugeridas para `lessonAccess` y `audioRecordings` (plazos e intentos validados en el servidor).
+- `storage.rules`: propuesta de reglas de Firebase Storage (ver comentarios dentro antes de desplegar).
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Notas de la migración (oct. 2026)
 
-### `npm run build`
+- Se reemplazó Create React App (`react-scripts`, descontinuado y con vulnerabilidades sin parche) por Vite.
+- `src/App.js`, `src/index.js` y `public/index.html` quedaron como archivos de compatibilidad y se pueden borrar.
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+## Plazos y reintentos (oct. 2026)
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+- `lessons.dueDate`: fecha límite general (opcional) de una lección práctica.
+- `lessonAccess/{lessonId}_{studentId}`: excepciones del profesor para un estudiante (`dueDate` ampliada, `extraAttempts`).
+- `audioRecordings/{lessonId}_{studentId}_{intento}`: cada envío guarda su número de intento (`attempt`).
+- La función `notifyLessonAccessChange` avisa al estudiante cuando se amplía el plazo o se reabre una lección (`firebase deploy --only functions`).
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+`src/hooks/useScorePlayback.js` ya no se usa y se puede borrar.
 
-### `npm run eject`
-
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
-
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
-
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Muestras de clarinete: ver `public/audio/samples/clarinet/CREDITS.txt`.

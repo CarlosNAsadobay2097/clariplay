@@ -1,14 +1,14 @@
 import { useEffect, useRef, useState } from "react";
-import { OpenSheetMusicDisplay } from "opensheetmusicdisplay";
-import { collection, query, where, getDocs } from "firebase/firestore";
-import * as Tone from "tone";
-import { db } from "../firebase";
-import { parseMusicXMLToNotes } from "../utils/parseMusicXMLToNotes";
-import "../css/main.css";
+import { fetchSafeMusicXML } from "../utils/musicxmlSecurity";
+import ScorePlayer from "./ScorePlayer";
 
-export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseId, userId }) {
-  const containerRef = useRef(null);
-  const osmdRef = useRef(null);
+/**
+ * Vista del estudiante: partitura con reproductor + grabación y envío.
+ *
+ * `submission` lo calcula el padre (ver utils/lessonStatus.js):
+ *   { canSubmit, reason, attemptNumber, attemptsAllowed }
+ */
+export default function ScoreViewer({ xmlUrl, onAudioUploaded, submission }) {
   const canvasRef = useRef(null);
   const mediaRecorderRef = useRef(null);
   const audioContextRef = useRef(null);
@@ -16,92 +16,53 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
   const dataArrayRef = useRef(null);
   const animationIdRef = useRef(null);
   const audioBlobRef = useRef(null);
-  const samplerRef = useRef(null);
+  const streamRef = useRef(null);
 
-  const [recording, setRecording] = useState(false);
-  const [audioUrl, setAudioUrl] = useState(null);
+  const [xml, setXml] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [sent, setSent] = useState(false);
-  const [playing, setPlaying] = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [audioUrl, setAudioUrl] = useState(null);
+  const [uploading, setUploading] = useState(false);
+  const [justSent, setJustSent] = useState(false);
 
-  // 🛡️ ESCUDO 1: Limpieza básica al cerrar (Evita que el micro se quede encendido)
+  const canSubmit = !!submission?.canSubmit && !justSent;
+
+  // 🛡️ Limpieza al cerrar: micrófono, animación y contexto de audio
   useEffect(() => {
     return () => {
-      if (mediaRecorderRef.current?.state === "recording") {
-        mediaRecorderRef.current.stop();
-      }
+      if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop();
+      streamRef.current?.getTracks().forEach(t => t.stop());
       if (animationIdRef.current) cancelAnimationFrame(animationIdRef.current);
-      // Detener cualquier sonido que se haya quedado pegado
-      Tone.Transport.stop();
-      Tone.Transport.cancel();
+      if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+        audioContextRef.current.close();
+      }
     };
   }, []);
 
   useEffect(() => {
-    if (!userId || !lessonId) return;
-    const checkExisting = async () => {
-      try {
-        const q = query(
-          collection(db, "audioRecordings"),
-          where("studentId", "==", userId),
-          where("lessonId", "==", lessonId)
-        );
-        const snapshot = await getDocs(q);
-        if (!snapshot.empty) setSent(true);
-      } catch (err) {
-        console.error("Error verificando grabación:", err);
-      }
-    };
-    checkExisting();
-  }, [userId, lessonId]);
+    return () => { if (audioUrl) URL.revokeObjectURL(audioUrl); };
+  }, [audioUrl]);
 
+  // Descarga validada y saneada de la partitura
   useEffect(() => {
     if (!xmlUrl) return;
+    const controller = new AbortController();
     setLoading(true);
     setError(null);
-
-    const osmd = osmdRef.current ?? new OpenSheetMusicDisplay(containerRef.current, {
-      drawingParameters: "compacttight",
-      autoResize: true,
-      drawTitle: true,
-    });
-    osmdRef.current = osmd;
-
-    fetch(xmlUrl)
-      .then(res => res.text())
-      .then(xml => {
-        // 🛡️ ESCUDO 2: Protección contra XML malicioso
-        if (xml.includes("<!ENTITY")) throw new Error("Archivo XML no seguro.");
-        return osmd.load(xml);
-      })
-      .then(() => { osmd.render() })
-      .then(() => setLoading(false))
+    setXml(null);
+    fetchSafeMusicXML(xmlUrl, { signal: controller.signal })
+      .then(clean => { if (!controller.signal.aborted) setXml(clean); })
       .catch(err => {
-        console.error("❌ Error:", err);
+        if (controller.signal.aborted) return;
+        console.error("❌ Error al cargar la partitura:", err);
         setError(err.message || "Error al cargar la partitura");
-        setLoading(false);
-      });
-
-    if (!samplerRef.current) {
-      samplerRef.current = new Tone.Sampler({
-        urls: {
-          A3: "A3.mp3", "A#3": "As3.mp3", B3: "B3.mp3", C4: "C4.mp3", "C#4": "Cs4.mp3",
-          D4: "D4.mp3", "D#4": "Ds4.mp3", E4: "E4.mp3", F4: "F4.mp3", "F#4": "Fs4.mp3",
-          G4: "G4.mp3", "G#4": "Gs4.mp3", A4: "A4.mp3", "A#4": "As4.mp3", B4: "B4.mp3",
-          C5: "C5.mp3", "C#5": "Cs5.mp3", D5: "D5.mp3", "D#5": "Ds5.mp3", E5: "E5.mp3",
-          F5: "F5.mp3", "F#5": "Fs5.mp3", G5: "G5.mp3", "G#5": "Gs5.mp3", A5: "A5.mp3",
-          "A#5": "As5.mp3", B5: "B5.mp3", C6: "C6.mp3", "C#6": "Cs6.mp3", D6: "D6.mp3",
-          "D#6": "Ds6.mp3", E6: "E6.mp3"
-        },
-        baseUrl: "/audio/samples/piano/",
-        release: 1,
-        onload: () => console.log("🎹 Sampler cargado"),
-      }).toDestination();
-    }
+      })
+      .finally(() => { if (!controller.signal.aborted) setLoading(false); });
+    return () => controller.abort();
   }, [xmlUrl]);
 
-  // (El resto de tus funciones de dibujo y grabación se quedan IGUAL...)
+  // Onda del micrófono mientras se graba
   useEffect(() => {
     if (!recording || !canvasRef.current || !analyserRef.current) return;
     const canvas = canvasRef.current;
@@ -111,10 +72,9 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
     const draw = () => {
       animationIdRef.current = requestAnimationFrame(draw);
       analyser.getByteTimeDomainData(dataArray);
-      ctx.fillStyle = "#FFF1E6";
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.lineWidth = 2;
-      ctx.strokeStyle = "#E51B23";
+      ctx.strokeStyle = "#FF2D37";
       ctx.beginPath();
       const sliceWidth = canvas.width / dataArray.length;
       let x = 0;
@@ -137,6 +97,7 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
     audioBlobRef.current = null;
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
       mediaRecorderRef.current = new MediaRecorder(stream);
       const audioChunks = [];
       mediaRecorderRef.current.ondataavailable = (event) => audioChunks.push(event.data);
@@ -145,8 +106,10 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
         const blob = new Blob(audioChunks, { type: "audio/webm" });
         audioBlobRef.current = blob;
         setAudioUrl(URL.createObjectURL(blob));
-        // Cerramos el stream de audio para apagar el micro físicamente
         stream.getTracks().forEach(track => track.stop());
+        if (audioContextRef.current && audioContextRef.current.state !== "closed") {
+          audioContextRef.current.close();
+        }
       };
       const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
       audioContextRef.current = audioCtx;
@@ -154,11 +117,12 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
       analyser.fftSize = 2048;
       analyserRef.current = analyser;
       dataArrayRef.current = new Uint8Array(analyser.frequencyBinCount);
-      const source = audioCtx.createMediaStreamSource(stream);
-      source.connect(analyser);
+      audioCtx.createMediaStreamSource(stream).connect(analyser);
       mediaRecorderRef.current.start();
       setRecording(true);
-    } catch (err) { setError("No se pudo acceder al micrófono"); }
+    } catch {
+      setError("No se pudo acceder al micrófono");
+    }
   };
 
   const stopRecording = () => {
@@ -169,128 +133,75 @@ export default function ScoreViewer({ xmlUrl, onAudioUploaded, lessonId, courseI
   };
 
   const handleUploadClick = async () => {
-    if (!audioBlobRef.current) return;
-    if (!window.confirm("¿Deseas enviar la grabación?")) return;
+    if (!audioBlobRef.current || uploading || !canSubmit) return;
+    if (!window.confirm("¿Deseas enviar la grabación al profesor?")) return;
+    setUploading(true);
     try {
       await onAudioUploaded(audioBlobRef.current);
-      setSent(true);
+      setJustSent(true);
       setAudioUrl(null);
-    } catch (err) { alert("Error al subir: " + err.message); }
-  };
-
-  const handlePlayScore = async () => {
-    // 🛡️ ESCUDO 3: Validación de carga antes de tocar
-    if (!samplerRef.current?.loaded || !osmdRef.current) {
-      alert("El piano aún se está cargando, intenta en un segundo.");
-      return;
-    }
-
-    setPlaying(true);
-    try {
-      const xmlString = await (await fetch(xmlUrl)).text();
-      const { notes, tempo } = parseMusicXMLToNotes(xmlString);
-      if (!notes || notes.length === 0) {
-        setPlaying(false);
-        return;
-      }
-
-      await Tone.start();
-      await Tone.loaded(); // Espera técnica a los archivos mp3
-
-      const osmd = osmdRef.current;
-      const bpm = tempo || 120;
-      const delayBeforeStart = 0.2;
-
-      Tone.Transport.cancel();
-      Tone.Transport.stop();
-      Tone.Transport.bpm.value = bpm;
-      osmd.cursor.reset();
-      osmd.cursor.hide();
-
-      let cursorMoved = false;
-      const part = new Tone.Part((time, noteObj) => {
-        const note = noteObj.note.replaceAll("#", "s");
-        const durSeconds = noteObj.duration * (60 / bpm);
-        samplerRef.current.triggerAttackRelease(note, durSeconds, time);
-
-        Tone.Draw.schedule(() => {
-          if (!cursorMoved) {
-            osmd.cursor.show();
-            cursorMoved = true;
-          } else if (!osmd.cursor.iterator.EndReached) {
-            osmd.cursor.next();
-          }
-        }, time);
-      }, notes.map(n => ({ ...n, time: n.time + delayBeforeStart })));
-
-      part.start(0);
-      Tone.Transport.start("+0.1");
-
-      const totalDuration = notes[notes.length - 1].time + notes[notes.length - 1].duration + delayBeforeStart;
-      setTimeout(() => {
-        Tone.Transport.stop();
-        part.dispose();
-        osmd.cursor.reset();
-        osmd.cursor.hide();
-        setPlaying(false);
-      }, (totalDuration + 0.5) * 1000);
     } catch (err) {
-      setPlaying(false);
+      alert("Error al subir: " + err.message);
+    } finally {
+      setUploading(false);
     }
   };
+
+  const attemptText = submission?.attemptsAllowed > 1
+    ? ` · Intento ${submission.attemptNumber} de ${submission.attemptsAllowed}`
+    : "";
 
   return (
     <div className="score-viewer-container">
-      <h3>🎼 Vista previa de la partitura</h3>
-      
-      {/* 1. Mensajes de estado: Carga y Errores */}
-      {loading && <p className="loading-text">Cargando partitura...</p>}
-      {error && <p style={{ color: "#E51B23", fontWeight: "bold" }}>❌ Error: {error}</p>}
-      
-      {/* 2. Contenedor de la partitura */}
-      <div ref={containerRef} className="score-viewer-osmd" style={{ minHeight: "200px" }} />
-      
-      {/* 3. Controles de reproducción de audio (Piano) */}
-      <div style={{ marginTop: "1rem", marginBottom: "1rem" }}>
-        <button 
-          onClick={handlePlayScore} 
-          disabled={playing || loading}
-          style={{ cursor: (playing || loading) ? "not-allowed" : "pointer" }}
-        >
-          {playing ? "🔁 Reproduciendo..." : "▶ Reproducir partitura"}
-        </button>
-      </div>
+      {loading && <p className="loading-text">Cargando partitura…</p>}
+      {error && (
+        <p className="score-viewer-error" role="alert">
+          <i className="fas fa-circle-exclamation" aria-hidden="true"></i> {error}
+        </p>
+      )}
 
-      {/* 4. Sección de Grabación y Envío */}
+      {xml && <ScorePlayer xml={xml} title="Partitura" />}
+
+      {/* Grabación y envío */}
       <div className="recording-controls">
-        {!sent && !recording && (
-          <button onClick={startRecording}>🎙 Iniciar grabación</button>
+        {justSent && (
+          <p className="status-success">
+            <i className="fas fa-circle-check" aria-hidden="true"></i> Lección enviada con éxito
+          </p>
         )}
-        
-        {!sent && recording && (
-          <button onClick={stopRecording} style={{ backgroundColor: "#E51B23", color: "white" }}>
-            ⏹ Detener
+
+        {!canSubmit && !justSent && submission?.reason && (
+          <p className="status-note">
+            <i className="fas fa-lock" aria-hidden="true"></i> {submission.reason}
+          </p>
+        )}
+
+        {canSubmit && !recording && (
+          <div className="record-row">
+            <button type="button" className="record-btn" onClick={startRecording}>
+              <span className="rec-dot" aria-hidden="true"></span> {audioUrl ? "Grabar de nuevo" : "Iniciar grabación"}
+            </button>
+            <span className="muted-text">Usa audífonos si quieres escuchar la partitura mientras grabas{attemptText}</span>
+          </div>
+        )}
+
+        {canSubmit && recording && (
+          <button type="button" className="record-btn is-recording" onClick={stopRecording}>
+            <i className="fas fa-stop" aria-hidden="true"></i> Detener
           </button>
         )}
 
         {recording && (
-          <div style={{ marginTop: "10px" }}>
-            <canvas ref={canvasRef} width={400} height={100} className="score-viewer-waveform" />
-          </div>
+          <canvas ref={canvasRef} width={400} height={100} className="score-viewer-waveform" />
         )}
 
-        {sent && <p style={{ color: "green", fontWeight: "bold" }}>✅ Lección enviada con éxito</p>}
-
-        {audioUrl && !sent && (
-          <div style={{ marginTop: "1rem", borderTop: "1px solid #ccc", paddingTop: "1rem" }}>
-            <p>🎧 Escucha tu intento:</p>
-            <audio controls src={audioUrl} style={{ width: "100%" }} />
-            <br />
-            <button 
-              onClick={handleUploadClick} 
-              style={{ marginTop: "0.5rem", backgroundColor: "#28a745", color: "white" }}
-            >
-              📤 Enviar lección al profesor
+        {audioUrl && canSubmit && (
+          <div className="recording-review">
+            <p><i className="fas fa-headphones" aria-hidden="true"></i> Escucha tu intento:</p>
+            <audio controls src={audioUrl} />
+            <button type="button" className="send-btn" onClick={handleUploadClick} disabled={uploading}>
+              <i className="fas fa-paper-plane" aria-hidden="true"></i>
+              {uploading ? " Enviando…" : " Enviar lección al profesor"}
             </button>
           </div>
         )}

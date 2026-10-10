@@ -195,7 +195,7 @@ export default function CoursesTeacherSection() {
                           <td>
                             <button
                               onClick={() => handleDeleteEnrollment(student.enrollmentId)}
-                              style={{ color: 'red' }}
+                              className="danger-text"
                             >
                               Quitar alumno
                             </button>

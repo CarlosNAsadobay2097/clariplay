@@ -3,6 +3,13 @@ import { getAuth } from 'firebase/auth';
 import { db, storage } from '../firebase';
 import ScoreEditor from '../components/ScoreEditor';  // ajusta la ruta según tu proyecto
 import LessonsByCourse from '../components/LessonsByCourse'; // Ajusta la ruta si es necesario
+import {
+  readMusicXMLFile,
+  musicXMLToUploadBlob,
+  validateImageFile,
+  MUSICXML_UPLOAD_METADATA,
+  MUSICXML_STORAGE_FILENAME,
+} from '../utils/musicxmlSecurity';
 
 import {
   collection,
@@ -11,7 +18,8 @@ import {
   query,
   where,
   onSnapshot,
-  serverTimestamp
+  serverTimestamp,
+  Timestamp
 } from 'firebase/firestore';
 import {
   ref,
@@ -32,6 +40,9 @@ const CreateLessonForm = () => {
   const [content, setContent] = useState('');
   const [courses, setCourses] = useState([]);
   const [xmlContent, setXmlContent] = useState(null);
+  const [fileError, setFileError] = useState('');
+  const [submitting, setSubmitting] = useState(false);
+  const [dueDate, setDueDate] = useState(''); // fecha límite opcional (datetime-local)
 
 
   // Cargar cursos del profesor
@@ -61,30 +72,41 @@ const CreateLessonForm = () => {
     };
   }, [imagePreview]);
 
-  const handleXmlChange = (e) => {
+  // 🛡️ El MusicXML se valida y sanea ANTES de mostrarlo o subirlo.
+  // Lo que se sube es el texto saneado, nunca el archivo original.
+  const handleXmlChange = async (e) => {
     const file = e.target.files[0];
-    setXmlFile(file);
-    setXmlFileName(file ? file.name : '');
+    setFileError('');
+    setXmlFile(null);
+    setXmlFileName('');
+    setXmlContent(null);
+    if (!file) return;
 
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        setXmlContent(event.target.result);  // contenido XML en texto
-      };
-      reader.readAsText(file);
-    } else {
-      setXmlContent(null);
+    try {
+      const cleanXml = await readMusicXMLFile(file);
+      setXmlFile(musicXMLToUploadBlob(cleanXml));
+      setXmlFileName(file.name);
+      setXmlContent(cleanXml);
+    } catch (err) {
+      setFileError(err.message || 'Archivo no válido');
+      e.target.value = '';
     }
   };
 
-
-  const handleImageChange = (e) => {
+  const handleImageChange = async (e) => {
     const file = e.target.files[0];
-    setImageFile(file);
-    if (file) {
+    setFileError('');
+    setImageFile(null);
+    setImagePreview(null);
+    if (!file) return;
+
+    try {
+      await validateImageFile(file);
+      setImageFile(file);
       setImagePreview(URL.createObjectURL(file));
-    } else {
-      setImagePreview(null);
+    } catch (err) {
+      setFileError(err.message || 'Imagen no válida');
+      e.target.value = '';
     }
   };
 
@@ -102,6 +124,8 @@ const CreateLessonForm = () => {
       alert('Debes estar autenticado');
       return;
     }
+    if (submitting) return;
+    setSubmitting(true);
 
     try {
       // Crear documento base
@@ -113,6 +137,7 @@ const CreateLessonForm = () => {
         courseId,
         createdBy: user.uid,
         createdAt: serverTimestamp(),
+        dueDate: type === 'practical' && dueDate ? Timestamp.fromDate(new Date(dueDate)) : null,
         deleted: false  // << nueva propiedad importante
       });
 
@@ -121,9 +146,10 @@ const CreateLessonForm = () => {
       let fileUrl = null;
 
       if (type === 'practical' && xmlFile) {
-        const filePath = `lessons/${courseId}/${lessonId}/${xmlFile.name}`;
+        // Nombre fijo: el nombre original del usuario no se usa en la ruta
+        const filePath = `lessons/${courseId}/${lessonId}/${MUSICXML_STORAGE_FILENAME}`;
         const fileRef = ref(storage, filePath);
-        await uploadBytes(fileRef, xmlFile, { contentType: 'application/xml' });
+        await uploadBytes(fileRef, xmlFile, MUSICXML_UPLOAD_METADATA);
         fileUrl = await getDownloadURL(fileRef);
         await updateDoc(lessonRef, { xmlFileUrl: fileUrl });
       }
@@ -131,9 +157,10 @@ const CreateLessonForm = () => {
       if (type === 'theory') {
         const updates = { content };
         if (imageFile) {
-          const imgPath = `theoryImages/${courseId}/${lessonId}/${imageFile.name}`;
+          const { contentType, ext } = await validateImageFile(imageFile);
+          const imgPath = `theoryImages/${courseId}/${lessonId}/image.${ext}`;
           const imgRef = ref(storage, imgPath);
-          await uploadBytes(imgRef, imageFile, { contentType: imageFile.type });
+          await uploadBytes(imgRef, imageFile, { contentType });
           const imgUrl = await getDownloadURL(imgRef);
           updates.imageUrl = imgUrl;
         }
@@ -146,14 +173,19 @@ const CreateLessonForm = () => {
       setDescription('');
       setInstructions('');
       setCourseId('');
+      setDueDate('');
       setXmlFile(null);
       setXmlFileName('');
       setImageFile(null);
       setImagePreview(null);
       setContent('');
+      setXmlContent(null);
+      setFileError('');
     } catch (error) {
       console.error('Error al crear la lección:', error);
       alert('Ocurrió un error al crear la lección ❌');
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -215,19 +247,35 @@ const CreateLessonForm = () => {
           </select>
         </div>
 
+        {/* Fecha límite (solo prácticas) */}
+        {type === 'practical' && (
+          <div className="form-group">
+            <label>
+              Fecha límite de entrega (opcional):
+              <input
+                type="datetime-local"
+                value={dueDate}
+                onChange={(e) => setDueDate(e.target.value)}
+              />
+            </label>
+            <span className="muted-text">Podrás ampliarla o reabrir la lección a cada estudiante desde "Estudiantes".</span>
+          </div>
+        )}
+
         {/* Práctica */}
         {type === 'practical' && (
         <div className="score-viewer-container">
           <label>Archivo MusicXML:</label>
           <input
             type="file"
-            accept=".xml,.musicxml"
+            accept=".xml,.musicxml,application/vnd.recordare.musicxml+xml,application/xml,text/xml"
             onChange={handleXmlChange}
           />
-          {xmlFileName && <p>Archivo seleccionado: <strong>{xmlFileName}</strong></p>}
+          {fileError && <p className="form-error" role="alert">{fileError}</p>}
+          {xmlFileName && <p className="file-chip">Archivo seleccionado: <strong>{xmlFileName}</strong></p>}
 
           {xmlContent && (
-            <div style={{ marginTop: '1rem' }}>
+            <div className="score-editor-wrapper">
               <ScoreEditor xmlContent={xmlContent} />
             </div>
           )}
@@ -251,16 +299,16 @@ const CreateLessonForm = () => {
               <label>Imagen teórica (PNG/JPG):</label>
               <input
                 type="file"
-                accept=".png,.jpg,.jpeg"
+                accept=".png,.jpg,.jpeg,image/png,image/jpeg"
                 onChange={handleImageChange}
               />
+              {fileError && <p className="form-error" role="alert">{fileError}</p>}
               {imagePreview && (
-                <div style={{ marginTop: '10px' }}>
+                <div className="image-preview">
                   <p>Vista previa de imagen:</p>
                   <img
                     src={imagePreview}
                     alt="Preview"
-                    style={{ maxWidth: '100%', maxHeight: '200px', borderRadius: '6px' }}
                   />
                 </div>
               )}
@@ -268,11 +316,11 @@ const CreateLessonForm = () => {
           </>
         )}
 
-        <button type="submit" className="submit-button">
-          Crear lección
+        <button type="submit" className="submit-button" disabled={submitting}>
+          {submitting ? 'Creando…' : 'Crear lección'}
         </button>
       </form>
-      <hr style={{ margin: '2rem 0' }} />
+      <hr className="section-divider" />
       <LessonsByCourse />
     </div>
   );

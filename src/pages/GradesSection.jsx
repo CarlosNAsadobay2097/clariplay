@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { getAuth } from 'firebase/auth';
 import { collection, query, where, getDocs, doc, getDoc } from 'firebase/firestore';
 import { db } from '../firebase';
+import { sortRecordings } from '../utils/lessonStatus';
 
 export default function LessonsSection() {
   const [courses, setCourses] = useState([]);
@@ -71,13 +72,18 @@ export default function LessonsSection() {
             id: docSnap.id,
             lessonId: data.lessonId,
             title: lessonData.title ?? 'Lección sin título',
+            attempt: data.attempt ?? 1,
+            createdAt: data.createdAt,
             score: data.score ?? '—',
             feedback: data.feedback ?? 'Sin feedback disponible',
           };
         })
       );
 
-      const filteredLessons = lessonsData.filter(Boolean);
+      // Con reintentos puede haber varios envíos: se muestra el último de cada lección
+      const latest = {};
+      sortRecordings(lessonsData.filter(Boolean)).forEach(r => { latest[r.lessonId] = r; });
+      const filteredLessons = Object.values(latest);
 
       setLessonsByCourse((prev) => ({
         ...prev,
@@ -142,7 +148,7 @@ export default function LessonsSection() {
                     lessonsByCourse[course.id].map((lesson, idx) => (
                       <tr key={lesson.id}>
                         <td>{idx + 1}</td>
-                        <td>{lesson.title}</td>
+                        <td>{lesson.title}{lesson.attempt > 1 && <span className="muted-text"> · intento {lesson.attempt}</span>}</td>
                         <td>{lesson.score}</td>
                         <td>
                           <button

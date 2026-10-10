@@ -1,0 +1,62 @@
+rules_version = '2';
+
+// Fragmento SUGERIDO para las reglas de Firestore de Clariplay.
+// NO reemplaces tus reglas actuales con este archivo tal cual: copia los
+// bloques "match" de lessonAccess y audioRecordings dentro de tus reglas
+// existentes (consola de Firebase → Firestore → Reglas).
+//
+// Qué garantizan en el servidor (aunque alguien se salte la app):
+//  - Solo el profesor dueño del curso puede ampliar plazos o reabrir.
+//  - El estudiante solo puede enviar el intento que le corresponde y
+//    dentro del plazo vigente (general o ampliado).
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() { return request.auth != null; }
+    function courseOwner(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId)).data.createdBy == request.auth.uid;
+    }
+
+    // Excepciones por estudiante: id = {lessonId}_{studentId}
+    match /lessonAccess/{accessId} {
+      allow read: if signedIn()
+        && (resource.data.studentId == request.auth.uid || resource.data.teacherId == request.auth.uid);
+      allow create, update: if signedIn()
+        && accessId == request.resource.data.lessonId + '_' + request.resource.data.studentId
+        && request.resource.data.teacherId == request.auth.uid
+        && courseOwner(request.resource.data.courseId);
+      allow delete: if false;
+    }
+
+    // Envíos de los estudiantes: id = {lessonId}_{studentId}_{attempt}
+    match /audioRecordings/{recId} {
+      function lesson() { return get(/databases/$(database)/documents/lessons/$(request.resource.data.lessonId)).data; }
+      function accessPath() {
+        return /databases/$(database)/documents/lessonAccess/$(request.resource.data.lessonId + '_' + request.auth.uid);
+      }
+      function access() { return exists(accessPath()) ? get(accessPath()).data : {}; }
+      function dueDate() {
+        return access().get('dueDate', null) != null ? access().dueDate : lesson().get('dueDate', null);
+      }
+      function allowedAttempts() { return 1 + access().get('extraAttempts', 0); }
+
+      allow create: if signedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && recId == request.resource.data.lessonId + '_' + request.auth.uid + '_' + string(request.resource.data.attempt)
+        && request.resource.data.attempt is int
+        && request.resource.data.attempt >= 1
+        && request.resource.data.attempt <= allowedAttempts()
+        && (dueDate() == null || request.time <= dueDate())
+        && !('score' in request.resource.data)
+        && !('feedback' in request.resource.data);
+
+      // El estudiante y el profesor del curso pueden leer; solo el profesor califica
+      allow read: if signedIn()
+        && (resource.data.studentId == request.auth.uid || courseOwner(resource.data.courseId));
+      allow update: if signedIn()
+        && courseOwner(resource.data.courseId)
+        && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['score', 'feedback']);
+    }
+  }
+}

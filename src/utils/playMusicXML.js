@@ -1,12 +1,11 @@
 import * as Tone from 'tone';
-import { sampler, isSamplerLoaded } from './sampler'; // Asegúrate de que estas funciones estén definidas
+import { loadSampler } from './sampler';
 import { parseMusicXMLToNotes } from './parseMusicXMLToNotes';
 
 export async function playMusicXML(xmlString) {
-  if (!isSamplerLoaded) {
-    console.warn("⏳ Esperando que los samples se carguen...");
-    await Tone.loaded();
-  }
+  // Utilidad heredada (no se usa en la app). El reproductor actual vive en
+  // src/hooks/useScorePlayback.js.
+  const sampler = await loadSampler();
 
   const { notes, tempo } = parseMusicXMLToNotes(xmlString);
 
@@ -42,8 +41,6 @@ export async function playMusicXML(xmlString) {
     const notePart = note.slice(0, -1);
     const octave = note.slice(-1);
     let normalized = flatToSharp[notePart] || notePart;
-    normalized = normalized.replaceAll("#", "s"); // ej. C#4 => Cs4
-
     return normalized + octave;
   }
 

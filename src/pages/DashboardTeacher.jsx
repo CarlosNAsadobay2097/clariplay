@@ -99,20 +99,20 @@ export default function DashboardTeacher() {
         >
           <h2 className="logo-dash">Clariplay</h2>
           <nav className="nav">
-            <button onClick={() => handleNavClick('home')}>
+            <button className={selectedSection === 'home' ? 'active' : ''} onClick={() => handleNavClick('home')}>
               <FontAwesomeIcon icon={faHome} /> <span>Inicio</span>
             </button>
-            <button onClick={() => handleNavClick('courses')}>
+            <button className={selectedSection === 'courses' ? 'active' : ''} onClick={() => handleNavClick('courses')}>
               <FontAwesomeIcon icon={faChalkboardTeacher} /> <span>Mis cursos</span>
             </button>
-            <button onClick={() => handleNavClick('lessons')}>
+            <button className={selectedSection === 'lessons' ? 'active' : ''} onClick={() => handleNavClick('lessons')}>
               <FontAwesomeIcon icon={faBookOpen} /> <span>Crear lecciones</span>
             </button>
-            <button onClick={() => handleNavClick('students')}>
+            <button className={selectedSection === 'students' ? 'active' : ''} onClick={() => handleNavClick('students')}>
               <FontAwesomeIcon icon={faUsers} /> <span>Estudiantes</span>
             </button>
             {/* Botón feedback eliminado */}
-            <button onClick={() => handleNavClick('profile')}>
+            <button className={selectedSection === 'profile' ? 'active' : ''} onClick={() => handleNavClick('profile')}>
               <FontAwesomeIcon icon={faUserCog} /> <span>Perfil</span>
             </button>
 

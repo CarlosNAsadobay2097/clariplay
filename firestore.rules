@@ -1,0 +1,173 @@
+rules_version = '2';
+
+// ===========================================================================
+//  Reglas de Firestore · Clariplay
+//  Pruebas automáticas con el emulador de Firebase en rules-test/.
+//  Desplegar:  firebase deploy --only firestore:rules
+// ===========================================================================
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ------------------------------------------------------------ helpers
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isSelf(uid) {
+      return signedIn() && request.auth.uid == uid;
+    }
+
+    function userDoc() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+
+    function isTeacher() {
+      return signedIn() && userDoc().role == 'teacher';
+    }
+
+    function course(courseId) {
+      return get(/databases/$(database)/documents/courses/$(courseId)).data;
+    }
+
+    function ownsCourse(courseId) {
+      return signedIn()
+        && exists(/databases/$(database)/documents/courses/$(courseId))
+        && course(courseId).createdBy == request.auth.uid;
+    }
+
+    // Solo cambian los campos indicados (el resto queda igual)
+    function onlyChanges(fields) {
+      return request.resource.data.diff(resource.data).affectedKeys().hasOnly(fields);
+    }
+
+    function unchanged(field) {
+      return !request.resource.data.diff(resource.data).affectedKeys().hasAny([field]);
+    }
+
+    // ------------------------------------------------------------ usuarios
+    // Cada usuario lee y edita SOLO su documento. El rol se fija al
+    // registrarse y no se puede cambiar después (evita que un estudiante
+    // se convierta en profesor editando su perfil).
+    match /users/{userId} {
+      allow read: if isSelf(userId);
+      allow create: if isSelf(userId)
+        && request.resource.data.role in ['student', 'teacher'];
+      allow update: if isSelf(userId) && unchanged('role');
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------------- notificaciones
+    // Las crean las Cloud Functions (Admin SDK, no pasan por estas reglas).
+    // El usuario solo puede leer las suyas y marcarlas como leídas.
+    match /notifications/{notificationId} {
+      allow read: if signedIn() && resource.data.userId == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.userId == request.auth.uid
+        && onlyChanges(['read']);
+      allow delete: if signedIn() && resource.data.userId == request.auth.uid;
+      allow create: if false;
+    }
+
+    // ------------------------------------------------------------ cursos
+    match /courses/{courseId} {
+      allow read: if signedIn();
+      allow create: if isTeacher()
+        && request.resource.data.createdBy == request.auth.uid;
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && unchanged('createdBy');
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // ------------------------------------------------------------ lecciones
+    match /lessons/{lessonId} {
+      allow read: if signedIn();
+      allow create: if signedIn()
+        && request.resource.data.createdBy == request.auth.uid
+        && ownsCourse(request.resource.data.courseId);
+      // El profesor no puede "mover" la lección a otro curso ni cambiar su autor
+      allow update: if signedIn()
+        && resource.data.createdBy == request.auth.uid
+        && unchanged('createdBy')
+        && unchanged('courseId');
+      allow delete: if signedIn() && resource.data.createdBy == request.auth.uid;
+    }
+
+    // -------------------------------------------------------- inscripciones
+    match /enrollments/{enrollmentId} {
+      allow read: if signedIn()
+        && (resource.data.studentId == request.auth.uid || ownsCourse(resource.data.courseId));
+      allow create: if signedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && exists(/databases/$(database)/documents/courses/$(request.resource.data.courseId));
+      // Puede quitarla el profesor del curso (o el propio estudiante, para darse de baja)
+      allow delete: if signedIn()
+        && (resource.data.studentId == request.auth.uid || ownsCourse(resource.data.courseId));
+      allow update: if false;
+    }
+
+    // ------------------------------------------- plazos y reintentos (nuevo)
+    // Id del documento: {lessonId}_{studentId}
+    match /lessonAccess/{accessId} {
+      allow read: if signedIn()
+        && (resource.data.studentId == request.auth.uid || resource.data.teacherId == request.auth.uid);
+      allow create, update: if signedIn()
+        && accessId == request.resource.data.lessonId + '_' + request.resource.data.studentId
+        && request.resource.data.teacherId == request.auth.uid
+        && ownsCourse(request.resource.data.courseId)
+        && get(/databases/$(database)/documents/lessons/$(request.resource.data.lessonId)).data.courseId == request.resource.data.courseId
+        && (!('extraAttempts' in request.resource.data) || (request.resource.data.extraAttempts is int && request.resource.data.extraAttempts >= 0 && request.resource.data.extraAttempts <= 20));
+      allow delete: if false;
+    }
+
+    // ------------------------------------------------- grabaciones (envíos)
+    // Id de los envíos nuevos: {lessonId}_{studentId}_{intento}
+    match /audioRecordings/{recordingId} {
+      function newLesson() {
+        return get(/databases/$(database)/documents/lessons/$(request.resource.data.lessonId)).data;
+      }
+      function accessPath() {
+        return /databases/$(database)/documents/lessonAccess/$(request.resource.data.lessonId + '_' + request.auth.uid);
+      }
+      function access() {
+        return exists(accessPath()) ? get(accessPath()).data : {};
+      }
+      function dueDate() {
+        return access().get('dueDate', null) != null ? access().dueDate : newLesson().get('dueDate', null);
+      }
+      function allowedAttempts() {
+        return 1 + access().get('extraAttempts', 0);
+      }
+
+      // Antes: cualquier usuario podía leer TODAS las grabaciones y notas.
+      // Ahora: solo el estudiante dueño y el profesor del curso.
+      allow read: if signedIn()
+        && (resource.data.studentId == request.auth.uid || ownsCourse(resource.data.courseId));
+
+      // El estudiante solo puede enviar el intento que le toca, dentro del
+      // plazo vigente y sin ponerse nota a sí mismo.
+      allow create: if signedIn()
+        && request.resource.data.studentId == request.auth.uid
+        && newLesson().courseId == request.resource.data.courseId
+        && newLesson().get('deleted', false) == false
+        && request.resource.data.attempt is int
+        && request.resource.data.attempt >= 1
+        && request.resource.data.attempt <= allowedAttempts()
+        && recordingId == request.resource.data.lessonId + '_' + request.auth.uid + '_' + string(request.resource.data.attempt)
+        && (dueDate() == null || request.time <= dueDate())
+        && !request.resource.data.keys().hasAny(['score', 'feedback']);
+
+      // Solo el profesor del curso califica, y solo nota y comentario.
+      // (Antes se validaba con request.resource.data.courseId, que el propio
+      //  profesor podía cambiar para editar grabaciones de otro curso.)
+      allow update: if signedIn()
+        && ownsCourse(resource.data.courseId)
+        && onlyChanges(['score', 'feedback']);
+
+      allow delete: if false;
+    }
+
+    // Todo lo que no esté arriba queda cerrado por defecto.
+  }
+}
